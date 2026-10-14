@@ -35,4 +35,6 @@ std::vector<Argb> wu(const std::vector<Argb>& pixels, uint16_t maxColours);
 QuantiserResult wsMeans(
     const std::vector<Argb>& inputPixels, const std::vector<Argb>& startingClusters, uint16_t maxColours);
 
+QuantiserResult celebi(const std::vector<Argb>& pixels, uint16_t maxColours);
+
 } // namespace m3colours::quantise

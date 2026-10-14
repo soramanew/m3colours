@@ -39,6 +39,7 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 add_library(m3colours
+    src/quantise/celebi.cpp
     src/quantise/lab.cpp
     src/quantise/wsmeans.cpp
     src/quantise/wu.cpp
