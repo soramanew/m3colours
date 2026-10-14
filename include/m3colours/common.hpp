@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 namespace m3colours {
@@ -20,11 +21,19 @@ constexpr std::uint8_t delinearise(double rgbComponent) {
     return static_cast<std::uint8_t>(std::clamp(scaled, 0, 255));
 }
 
-constexpr double linearise(const int rgbComponent) {
-    const auto normalised = rgbComponent / 255.0;
-    if (normalised <= 0.040449936)
-        return normalised / 12.92 * 100.0;
-    return std::pow((normalised + 0.055) / 1.055, 2.4) * 100.0;
+inline const std::array<double, 256> k_lineariseTable = [] {
+    std::array<double, 256> table{};
+    for (std::size_t i = 0; i < table.size(); i++) {
+        const auto normalised = static_cast<double>(i) / 255.0;
+        table[i] = normalised <= 0.040449936 // format hack
+                       ? normalised / 12.92 * 100.0
+                       : std::pow((normalised + 0.055) / 1.055, 2.4) * 100.0;
+    }
+    return table;
+}();
+
+inline double linearise(std::uint8_t rgbComponent) {
+    return k_lineariseTable[rgbComponent];
 }
 
 } // namespace detail
@@ -83,7 +92,7 @@ constexpr double yFromLstar(double lstar) {
     return lstar / (24389.0 / 27.0) * 100.0;
 }
 
-constexpr double lstarFromArgb(Argb argb) {
+inline double lstarFromArgb(Argb argb) {
     const auto redL = detail::linearise(argb.red());
     const auto greenL = detail::linearise(argb.green());
     const auto blueL = detail::linearise(argb.blue());
