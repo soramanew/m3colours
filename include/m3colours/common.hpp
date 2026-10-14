@@ -43,7 +43,7 @@ public:
     constexpr explicit Argb(Vec3 linearRgb)
         : Argb(detail::delinearise(linearRgb.a), detail::delinearise(linearRgb.b), detail::delinearise(linearRgb.c)) {}
 
-    [[nodiscard]] constexpr std::uint32_t value() const { return m_value; }
+    [[nodiscard]] constexpr bool operator==(const Argb&) const = default;
 
     // clang-format off
     [[nodiscard]] constexpr std::uint8_t red() const { return (m_value & 0x00ff0000) >> 16; }
@@ -58,8 +58,6 @@ private:
     std::uint32_t m_value;
 };
 
-namespace detail {
-
 constexpr double lstarFromY(double y) {
     const auto yNormalized = y / 100.0;
     if (yNormalized <= 216.0 / 24389.0)
@@ -67,36 +65,19 @@ constexpr double lstarFromY(double y) {
     return 116.0 * std::pow(yNormalized, 1.0 / 3.0) - 16.0;
 }
 
-constexpr double argbToY(Argb argb) {
-    const auto redL = linearise(argb.red());
-    const auto greenL = linearise(argb.green());
-    const auto blueL = linearise(argb.blue());
-    return 0.2126 * redL + 0.7152 * greenL + 0.0722 * blueL;
+constexpr double yFromLstar(double lstar) {
+    if (lstar > 8.0) {
+        const auto cubeRoot = (lstar + 16.0) / 116.0;
+        return cubeRoot * cubeRoot * cubeRoot * 100.0;
+    }
+    return lstar / (24389.0 / 27.0) * 100.0;
 }
 
-} // namespace detail
-
-class Lstar {
-public:
-    constexpr explicit Lstar(double y)
-        : m_value(detail::lstarFromY(y)) {}
-
-    constexpr explicit Lstar(Argb argb)
-        : Lstar(detail::argbToY(argb)) {}
-
-    [[nodiscard]] constexpr double value() const { return m_value; }
-
-    [[nodiscard]] constexpr double y() const {
-        if (m_value > 8.0) {
-            double cubeRoot = (m_value + 16.0) / 116.0;
-            double cube = cubeRoot * cubeRoot * cubeRoot;
-            return cube * 100.0;
-        }
-        return m_value / (24389.0 / 27.0) * 100.0;
-    }
-
-private:
-    double m_value;
-};
+constexpr double lstarFromArgb(Argb argb) {
+    const auto redL = detail::linearise(argb.red());
+    const auto greenL = detail::linearise(argb.green());
+    const auto blueL = detail::linearise(argb.blue());
+    return lstarFromY(0.2126 * redL + 0.7152 * greenL + 0.0722 * blueL);
+}
 
 } // namespace m3colours
