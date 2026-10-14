@@ -45,3 +45,11 @@ add_library(m3colours::m3colours ALIAS m3colours)
 
 target_include_directories(m3colours PUBLIC include)
 target_compile_features(m3colours PUBLIC cxx_std_20)
+
+if(PROJECT_IS_TOP_LEVEL)
+    option(BUILD_TESTING "Build tests" OFF)
+    if(BUILD_TESTING)
+        enable_testing()
+        add_subdirectory(tests)
+    endif()
+endif()
