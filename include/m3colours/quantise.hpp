@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <vector>
 
 #include "common.hpp"
@@ -24,6 +25,14 @@ struct Lab {
     [[nodiscard]] Argb toArgb() const;
 };
 
+struct QuantiserResult {
+    std::map<Argb, uint32_t> colourToCount;
+    std::map<Argb, Argb> inputToCluster;
+};
+
 std::vector<Argb> wu(const std::vector<Argb>& pixels, uint16_t maxColours);
+
+QuantiserResult wsMeans(
+    const std::vector<Argb>& inputPixels, const std::vector<Argb>& startingClusters, uint16_t maxColours);
 
 } // namespace m3colours::quantise

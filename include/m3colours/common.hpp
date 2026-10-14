@@ -47,12 +47,14 @@ public:
         : Argb(detail::delinearise(linearRgb.a), detail::delinearise(linearRgb.b), detail::delinearise(linearRgb.c)) {}
 
     [[nodiscard]] constexpr bool operator==(const Argb&) const = default;
+    [[nodiscard]] constexpr auto operator<=>(const Argb&) const = default;
 
     // clang-format off
-    [[nodiscard]] constexpr std::uint8_t red() const { return (m_value & 0x00ff0000) >> 16; }
-    [[nodiscard]] constexpr std::uint8_t green() const { return (m_value & 0x0000ff00) >> 8; }
-    [[nodiscard]] constexpr std::uint8_t blue() const { return m_value & 0x000000ff; }
-    [[nodiscard]] constexpr std::uint8_t alpha() const { return (m_value & 0xff000000) >> 24; }
+    [[nodiscard]] constexpr std::uint32_t value() const { return m_value; }
+    [[nodiscard]] constexpr std::uint8_t red() const { return (m_value & 0x00ff0000u) >> 16u; }
+    [[nodiscard]] constexpr std::uint8_t green() const { return (m_value & 0x0000ff00u) >> 8u; }
+    [[nodiscard]] constexpr std::uint8_t blue() const { return m_value & 0x000000ffu; }
+    [[nodiscard]] constexpr std::uint8_t alpha() const { return (m_value & 0xff000000u) >> 24u; }
     // clang-format on
 
     [[nodiscard]] constexpr bool isOpaque() const { return alpha() == 255; }

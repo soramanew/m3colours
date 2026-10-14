@@ -40,6 +40,7 @@ endif()
 
 add_library(m3colours
     src/quantise/lab.cpp
+    src/quantise/wsmeans.cpp
     src/quantise/wu.cpp
 )
 add_library(m3colours::m3colours ALIAS m3colours)
