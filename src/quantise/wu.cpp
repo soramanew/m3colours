@@ -82,9 +82,9 @@ double squaredNorm(const Cell& cell) {
     return r * r + g * g + b * b;
 }
 
-size_t getIndex(int r, int g, int b) {
+std::size_t getIndex(int r, int g, int b) {
     const auto index = (r * k_indexCount + g) * k_indexCount + b;
-    return static_cast<size_t>(index);
+    return static_cast<std::size_t>(index);
 }
 
 class Moments {
@@ -116,7 +116,7 @@ public:
                 Cell line;
 
                 for (int b = 1; b < k_indexCount; b++) {
-                    auto& column = area[static_cast<size_t>(b)];
+                    auto& column = area[static_cast<std::size_t>(b)];
                     line += at(r, g, b);
                     column += line;
                     at(r, g, b) = at(r - 1, g, b) + column;
@@ -217,7 +217,7 @@ std::vector<Argb> wu(const std::vector<Argb>& pixels, uint16_t maxColours) {
     if (maxColours <= 0 || maxColours > 256 || pixels.empty())
         return {};
 
-    size_t colourCount = maxColours;
+    std::size_t colourCount = maxColours;
     Moments moments;
     for (const auto pixel : pixels)
         moments.addPixel(pixel);
@@ -227,8 +227,8 @@ std::vector<Argb> wu(const std::vector<Argb>& pixels, uint16_t maxColours) {
     cubes[0].r1 = cubes[0].g1 = cubes[0].b1 = k_indexCount - 1;
 
     std::vector<double> volumeVariance(k_maxColors);
-    size_t next = 0;
-    for (size_t i = 1; i < colourCount; ++i) {
+    std::size_t next = 0;
+    for (std::size_t i = 1; i < colourCount; ++i) {
         if (const auto upper = cut(moments, cubes[next])) {
             cubes[i] = *upper;
             volumeVariance[next] = cubes[next].volume() > 1 ? moments.variance(cubes[next]) : 0.0;
@@ -240,7 +240,7 @@ std::vector<Argb> wu(const std::vector<Argb>& pixels, uint16_t maxColours) {
 
         next = 0;
         double temp = volumeVariance[0];
-        for (size_t j = 1; j <= i; j++) {
+        for (std::size_t j = 1; j <= i; j++) {
             if (volumeVariance[j] > temp) {
                 temp = volumeVariance[j];
                 next = j;
@@ -253,7 +253,7 @@ std::vector<Argb> wu(const std::vector<Argb>& pixels, uint16_t maxColours) {
     }
 
     std::vector<Argb> outColours;
-    for (size_t i = 0; i < colourCount; ++i) {
+    for (std::size_t i = 0; i < colourCount; ++i) {
         const auto cell = moments.sum(cubes[i]);
         if (cell.w > 0) {
             const auto red = static_cast<uint8_t>(cell.r / cell.w);
