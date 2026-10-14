@@ -1,10 +1,13 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 
 namespace m3colours {
+
+inline constexpr std::array<double, 3> k_whitePointD65 = { 95.047, 100.0, 108.883 };
 
 namespace detail {
 
