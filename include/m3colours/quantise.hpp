@@ -13,7 +13,12 @@ struct Lab {
 
     Lab(double l, double a, double b);
 
-    [[nodiscard]] double deltaE(const Lab& lab) const;
+    [[nodiscard]] double deltaE(const Lab& lab) const {
+        const auto dL = l - lab.l;
+        const auto dA = a - lab.a;
+        const auto dB = b - lab.b;
+        return (dL * dL) + (dA * dA) + (dB * dB);
+    }
 
     explicit Lab(Argb argb);
     [[nodiscard]] Argb toArgb() const;

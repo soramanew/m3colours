@@ -7,13 +7,6 @@ Lab::Lab(double l, double a, double b)
     , a(a)
     , b(b) {}
 
-double Lab::deltaE(const Lab& lab) const {
-    const auto dL = l - lab.l;
-    const auto dA = a - lab.a;
-    const auto dB = b - lab.b;
-    return (dL * dL) + (dA * dA) + (dB * dB);
-}
-
 Lab::Lab(Argb argb) {
     const auto redL = detail::linearise(argb.red());
     const auto greenL = detail::linearise(argb.green());
