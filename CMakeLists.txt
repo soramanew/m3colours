@@ -39,6 +39,10 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 add_library(m3colours
+    src/hct/cam16.cpp
+    src/hct/hct.cpp
+    src/hct/solver.cpp
+    src/hct/viewingconditions.cpp
     src/quantise/celebi.cpp
     src/quantise/lab.cpp
     src/quantise/wsmeans.cpp

@@ -63,6 +63,11 @@ private:
     std::uint32_t m_value;
 };
 
+constexpr double sanitiseDegrees(double degrees) {
+    degrees = std::fmod(degrees, 360.0);
+    return degrees < 0.0 ? degrees + 360.0 : degrees;
+}
+
 constexpr double lstarFromY(double y) {
     const auto yNormalized = y / 100.0;
     if (yNormalized <= 216.0 / 24389.0)
