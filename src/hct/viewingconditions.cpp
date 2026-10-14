@@ -57,6 +57,7 @@ ViewingConditions ViewingConditions::make(std::array<double, 3> whitePoint, doub
         .fl = fl,
         .flRoot = std::pow(fl, 0.25),
         .z = 1.48 + std::sqrt(n),
+        .alphaCoeff = std::pow(1.64 - std::pow(0.29, n), 0.73),
     };
 }
 

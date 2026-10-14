@@ -23,21 +23,19 @@ double inverseChromaticAdaptation(double adapted, double fl) {
 
 } // namespace
 
-Cam16 Cam16::fromArgb(Argb argb, const ViewingConditions& vc) {
+Vec3 internal::xyzFromArgb(Argb argb) {
     const auto redL = detail::linearise(argb.red());
     const auto greenL = detail::linearise(argb.green());
     const auto blueL = detail::linearise(argb.blue());
 
-    return fromXyz(
-        {
-            .a = 0.41233895 * redL + 0.35762064 * greenL + 0.18051042 * blueL,
-            .b = 0.2126 * redL + 0.7152 * greenL + 0.0722 * blueL,
-            .c = 0.01932141 * redL + 0.11916382 * greenL + 0.95034478 * blueL,
-        },
-        vc);
+    return {
+        .a = 0.41233895 * redL + 0.35762064 * greenL + 0.18051042 * blueL,
+        .b = 0.2126 * redL + 0.7152 * greenL + 0.0722 * blueL,
+        .c = 0.01932141 * redL + 0.11916382 * greenL + 0.95034478 * blueL,
+    };
 }
 
-Cam16 Cam16::fromXyz(Vec3 xyz, const ViewingConditions& vc) {
+internal::Jch internal::jchFromXyz(Vec3 xyz, const ViewingConditions& vc) {
     const auto rC = 0.401288 * xyz.a + 0.650173 * xyz.b - 0.051461 * xyz.c;
     const auto gC = -0.250268 * xyz.a + 1.204414 * xyz.b + 0.045854 * xyz.c;
     const auto bC = -0.002079 * xyz.a + 0.048952 * xyz.b + 0.953127 * xyz.c;
@@ -51,45 +49,63 @@ Cam16 Cam16::fromXyz(Vec3 xyz, const ViewingConditions& vc) {
     const auto u = (20.0 * rA + 20.0 * gA + 21.0 * bA) / 20.0;
     const auto p2 = (40.0 * rA + 20.0 * gA + bA) / 20.0;
 
-    const auto hue = sanitiseDegrees(std::atan2(b, a) * k_degreesPerRadian);
-    const auto hueRadians = hue * k_radiansPerDegree;
-
-    const auto ac = p2 * vc.nbb;
-    const auto j = 100.0 * std::pow(ac / vc.aw, vc.c * vc.z);
-    const auto jRoot = std::sqrt(j / 100.0);
-    const auto q = (4.0 / vc.c) * jRoot * (vc.aw + 4.0) * vc.flRoot;
+    const auto atanDegrees = std::atan2(b, a) * k_degreesPerRadian;
+    const auto hue = atanDegrees < 0.0 ? atanDegrees + 360.0 : atanDegrees;
+    const auto j = 100.0 * std::pow(p2 * vc.nbb / vc.aw, vc.c * vc.z);
 
     const auto huePrime = hue < 20.14 ? hue + 360.0 : hue;
     const auto eHue = 0.25 * (std::cos(huePrime * k_radiansPerDegree + 2.0) + 3.8);
     const auto p1 = (50000.0 / 13.0) * eHue * vc.nc * vc.ncb;
     const auto t = (p1 * std::sqrt(a * a + b * b)) / (u + 0.305);
-    const auto alpha = std::pow(t, 0.9) * std::pow(1.64 - std::pow(0.29, vc.n), 0.73);
+    const auto alpha = std::pow(t, 0.9) * vc.alphaCoeff;
 
-    const auto c = alpha * jRoot;
-    const auto m = c * vc.flRoot;
-    const auto s = 50.0 * std::sqrt((alpha * vc.c) / (vc.aw + 4.0));
+    return { .j = j, .chroma = alpha * std::sqrt(j / 100.0), .hue = hue };
+}
 
-    const auto jstar = ((1.0 + 100.0 * 0.007) * j) / (1.0 + 0.007 * j);
-    const auto mstar = (1.0 / 0.0228) * std::log(1.0 + 0.0228 * m);
+Vec3 internal::xyzFromJch(Jch jch, const ViewingConditions& vc) {
+    const auto [j, chroma, hue] = jch;
+    const auto alpha = chroma <= 0.0 || j <= 0.0 ? 0.0 : chroma / std::sqrt(j / 100.0);
+    const auto t = std::pow(alpha / vc.alphaCoeff, 1.0 / 0.9);
+    const auto hRad = hue * k_radiansPerDegree;
+    const auto eHue = 0.25 * (std::cos(hRad + 2.0) + 3.8);
+    const auto ac = vc.aw * std::pow(j / 100.0, 1.0 / vc.c / vc.z);
+    const auto p1 = eHue * (50000.0 / 13.0) * vc.nc * vc.ncb;
+    const auto p2 = ac / vc.nbb;
+    const auto hSin = std::sin(hRad);
+    const auto hCos = std::cos(hRad);
+    const auto gamma = (23.0 * (p2 + 0.305) * t) / (23.0 * p1 + 11.0 * t * hCos + 108.0 * t * hSin);
+    const auto a = gamma * hCos;
+    const auto b = gamma * hSin;
+
+    const auto rA = (460.0 * p2 + 451.0 * a + 288.0 * b) / 1403.0;
+    const auto gA = (460.0 * p2 - 891.0 * a - 261.0 * b) / 1403.0;
+    const auto bA = (460.0 * p2 - 220.0 * a - 6300.0 * b) / 1403.0;
+
+    const auto rF = inverseChromaticAdaptation(rA, vc.fl) / vc.rgbD[0];
+    const auto gF = inverseChromaticAdaptation(gA, vc.fl) / vc.rgbD[1];
+    const auto bF = inverseChromaticAdaptation(bA, vc.fl) / vc.rgbD[2];
 
     return {
-        .hue = hue,
-        .chroma = c,
-        .j = j,
-        .q = q,
-        .m = m,
-        .s = s,
-        .jstar = jstar,
-        .astar = mstar * std::cos(hueRadians),
-        .bstar = mstar * std::sin(hueRadians),
+        .a = 1.86206786 * rF - 1.01125463 * gF + 0.14918677 * bF,
+        .b = 0.38752654 * rF + 0.62144744 * gF - 0.00897398 * bF,
+        .c = -0.01584150 * rF - 0.03412294 * gF + 1.04996444 * bF,
     };
+}
+
+Cam16 Cam16::fromArgb(Argb argb, const ViewingConditions& vc) {
+    return fromXyz(internal::xyzFromArgb(argb), vc);
+}
+
+Cam16 Cam16::fromXyz(Vec3 xyz, const ViewingConditions& vc) {
+    const auto [j, chroma, hue] = internal::jchFromXyz(xyz, vc);
+    return fromJch(j, chroma, hue, vc);
 }
 
 Cam16 Cam16::fromJch(double j, double c, double h, const ViewingConditions& vc) {
     const auto jRoot = std::sqrt(j / 100.0);
     const auto q = (4.0 / vc.c) * jRoot * (vc.aw + 4.0) * vc.flRoot;
     const auto m = c * vc.flRoot;
-    const auto alpha = c / jRoot;
+    const auto alpha = j <= 0.0 ? 0.0 : c / jRoot;
     const auto s = 50.0 * std::sqrt((alpha * vc.c) / (vc.aw + 4.0));
     const auto hueRadians = h * k_radiansPerDegree;
     const auto jstar = ((1.0 + 100.0 * 0.007) * j) / (1.0 + 0.007 * j);
@@ -128,32 +144,7 @@ double Cam16::distance(const Cam16& other) const {
 }
 
 Vec3 Cam16::toXyz(const ViewingConditions& vc) const {
-    const auto alpha = chroma <= 0.0 || j <= 0.0 ? 0.0 : chroma / std::sqrt(j / 100.0);
-    const auto t = std::pow(alpha / std::pow(1.64 - std::pow(0.29, vc.n), 0.73), 1.0 / 0.9);
-    const auto hRad = hue * k_radiansPerDegree;
-    const auto eHue = 0.25 * (std::cos(hRad + 2.0) + 3.8);
-    const auto ac = vc.aw * std::pow(j / 100.0, 1.0 / vc.c / vc.z);
-    const auto p1 = eHue * (50000.0 / 13.0) * vc.nc * vc.ncb;
-    const auto p2 = ac / vc.nbb;
-    const auto hSin = std::sin(hRad);
-    const auto hCos = std::cos(hRad);
-    const auto gamma = (23.0 * (p2 + 0.305) * t) / (23.0 * p1 + 11.0 * t * hCos + 108.0 * t * hSin);
-    const auto a = gamma * hCos;
-    const auto b = gamma * hSin;
-
-    const auto rA = (460.0 * p2 + 451.0 * a + 288.0 * b) / 1403.0;
-    const auto gA = (460.0 * p2 - 891.0 * a - 261.0 * b) / 1403.0;
-    const auto bA = (460.0 * p2 - 220.0 * a - 6300.0 * b) / 1403.0;
-
-    const auto rF = inverseChromaticAdaptation(rA, vc.fl) / vc.rgbD[0];
-    const auto gF = inverseChromaticAdaptation(gA, vc.fl) / vc.rgbD[1];
-    const auto bF = inverseChromaticAdaptation(bA, vc.fl) / vc.rgbD[2];
-
-    return {
-        .a = 1.86206786 * rF - 1.01125463 * gF + 0.14918677 * bF,
-        .b = 0.38752654 * rF + 0.62144744 * gF - 0.00897398 * bF,
-        .c = -0.01584150 * rF - 0.03412294 * gF + 1.04996444 * bF,
-    };
+    return internal::xyzFromJch({ .j = j, .chroma = chroma, .hue = hue }, vc);
 }
 
 Argb Cam16::toArgb(const ViewingConditions& vc) const {

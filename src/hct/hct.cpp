@@ -23,17 +23,19 @@ void Hct::setTone(double tone) {
 }
 
 Hct Hct::inViewingConditions(const ViewingConditions& vc) const {
-    const auto viewedInVc = Cam16::fromArgb(m_argb).toXyz(vc);
-    const auto recastInVc = Cam16::fromXyz(viewedInVc);
+    const auto jch = internal::jchFromXyz(internal::xyzFromArgb(m_argb), k_defaultViewingConditions);
+    const auto viewedInVc = internal::xyzFromJch(jch, vc);
+    const auto recastInVc = internal::jchFromXyz(viewedInVc, k_defaultViewingConditions);
     return { recastInVc.hue, recastInVc.chroma, lstarFromY(viewedInVc.b) };
 }
 
 void Hct::setArgb(Argb argb) {
-    const auto cam = Cam16::fromArgb(argb);
+    const auto xyz = internal::xyzFromArgb(argb);
+    const auto [j, chroma, hue] = internal::jchFromXyz(xyz, k_defaultViewingConditions);
     m_argb = argb;
-    m_hue = cam.hue;
-    m_chroma = cam.chroma;
-    m_tone = lstarFromArgb(argb);
+    m_hue = hue;
+    m_chroma = chroma;
+    m_tone = lstarFromY(xyz.b);
 }
 
 } // namespace m3colours::hct

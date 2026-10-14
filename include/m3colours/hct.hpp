@@ -18,6 +18,7 @@ struct ViewingConditions {
     double fl;
     double flRoot;
     double z;
+    double alphaCoeff;
 
     static ViewingConditions make(std::array<double, 3> whitePoint = k_whitePointD65,
         double adaptingLuminance = (200.0 / std::numbers::pi) * yFromLstar(50.0) / 100.0, double backgroundLstar = 50.0,
@@ -25,6 +26,20 @@ struct ViewingConditions {
 };
 
 inline const ViewingConditions k_defaultViewingConditions = ViewingConditions::make();
+
+namespace internal {
+
+struct Jch {
+    double j;
+    double chroma;
+    double hue;
+};
+
+Vec3 xyzFromArgb(Argb argb);
+Jch jchFromXyz(Vec3 xyz, const ViewingConditions& vc);
+Vec3 xyzFromJch(Jch jch, const ViewingConditions& vc);
+
+} // namespace internal
 
 struct Cam16 {
     double hue;

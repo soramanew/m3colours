@@ -297,8 +297,9 @@ constexpr LinRgb matrixMultiply(const LinRgb& row, const std::array<LinRgb, 3>& 
     };
 }
 
-double sanitiseRadians(double angle) {
-    return std::fmod(angle + std::numbers::pi * 8.0, std::numbers::pi * 2.0);
+// `angle` must be within (-2pi, 2pi)
+constexpr double sanitiseRadians(double angle) {
+    return angle < 0.0 ? angle + std::numbers::pi * 2.0 : angle;
 }
 
 double trueDelinearised(double rgbComponent) {
@@ -480,7 +481,7 @@ std::optional<Argb> findResultByJ(double hueRadians, double chroma, double y) {
     auto j = std::sqrt(y) * 11.0;
 
     const auto& vc = k_defaultViewingConditions;
-    const auto tInnerCoeff = 1.0 / std::pow(1.64 - std::pow(0.29, vc.n), 0.73);
+    const auto tInnerCoeff = 1.0 / vc.alphaCoeff;
     const auto eHue = 0.25 * (std::cos(hueRadians + 2.0) + 3.8);
     const auto p1 = eHue * (50000.0 / 13.0) * vc.nc * vc.ncb;
     const auto hSin = std::sin(hueRadians);
@@ -533,7 +534,8 @@ Argb solveToArgb(double hueDegrees, double chroma, double lstar) {
     if (const auto exactAnswer = findResultByJ(hueRadians, chroma, y))
         return *exactAnswer;
 
-    return argbFromLinRgb(bisectToLimit(y, hueRadians));
+    const auto atan2Hue = hueRadians > std::numbers::pi ? hueRadians - std::numbers::pi * 2.0 : hueRadians;
+    return argbFromLinRgb(bisectToLimit(y, atan2Hue));
 }
 
 } // namespace m3colours::hct
