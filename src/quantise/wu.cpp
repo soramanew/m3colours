@@ -13,22 +13,23 @@ enum class Direction : std::uint8_t {
     Blue,
 };
 
-constexpr int k_indexBits = 5;
-constexpr int k_indexCount = ((1 << k_indexBits) + 1);
-constexpr int k_totalSize = (k_indexCount * k_indexCount * k_indexCount);
-constexpr int k_maxColors = 256;
+constexpr std::size_t k_indexBits = 5;
+constexpr std::size_t k_bitsToRemove = 8 - k_indexBits;
+constexpr std::size_t k_indexCount = (1u << k_indexBits) + 1;
+constexpr std::size_t k_totalSize = k_indexCount * k_indexCount * k_indexCount;
+constexpr std::size_t k_maxColors = 256;
 
 struct Box {
-    int r0 = 0;
-    int r1 = 0;
-    int g0 = 0;
-    int g1 = 0;
-    int b0 = 0;
-    int b1 = 0;
+    std::size_t r0 = 0;
+    std::size_t r1 = 0;
+    std::size_t g0 = 0;
+    std::size_t g1 = 0;
+    std::size_t b0 = 0;
+    std::size_t b1 = 0;
 
-    [[nodiscard]] int volume() const { return (r1 - r0) * (g1 - g0) * (b1 - b0); }
+    [[nodiscard]] std::size_t volume() const { return (r1 - r0) * (g1 - g0) * (b1 - b0); }
 
-    Box split(Direction direction, int position) {
+    Box split(Direction direction, std::size_t position) {
         Box upper = *this;
         switch (direction) {
         case Direction::Red:
@@ -82,9 +83,8 @@ double squaredNorm(const Cell& cell) {
     return r * r + g * g + b * b;
 }
 
-std::size_t getIndex(int r, int g, int b) {
-    const auto index = (r * k_indexCount + g) * k_indexCount + b;
-    return static_cast<std::size_t>(index);
+std::size_t getIndex(std::size_t r, std::size_t g, std::size_t b) {
+    return (r * k_indexCount + g) * k_indexCount + b;
 }
 
 class Moments {
@@ -94,10 +94,9 @@ public:
         const int64_t green = pixel.green();
         const int64_t blue = pixel.blue();
 
-        const auto bitsToRemove = 8 - k_indexBits;
-        const auto indexR = (pixel.red() >> bitsToRemove) + 1;
-        const auto indexG = (pixel.green() >> bitsToRemove) + 1;
-        const auto indexB = (pixel.blue() >> bitsToRemove) + 1;
+        const auto indexR = (static_cast<std::size_t>(pixel.red()) >> k_bitsToRemove) + 1;
+        const auto indexG = (static_cast<std::size_t>(pixel.green()) >> k_bitsToRemove) + 1;
+        const auto indexB = (static_cast<std::size_t>(pixel.blue()) >> k_bitsToRemove) + 1;
 
         at(indexR, indexG, indexB) += Cell{
             .w = 1,
@@ -109,14 +108,14 @@ public:
     }
 
     void accumulate() {
-        for (int r = 1; r < k_indexCount; r++) {
+        for (std::size_t r = 1; r < k_indexCount; r++) {
             std::array<Cell, k_indexCount> area{};
 
-            for (int g = 1; g < k_indexCount; g++) {
+            for (std::size_t g = 1; g < k_indexCount; g++) {
                 Cell line;
 
-                for (int b = 1; b < k_indexCount; b++) {
-                    auto& column = area[static_cast<std::size_t>(b)];
+                for (std::size_t b = 1; b < k_indexCount; b++) {
+                    auto& column = area[b];
                     line += at(r, g, b);
                     column += line;
                     at(r, g, b) = at(r - 1, g, b) + column;
@@ -131,7 +130,7 @@ public:
                at(box.r0, box.g0, box.b1) - at(box.r0, box.g0, box.b0);
     }
 
-    [[nodiscard]] Cell top(const Box& box, Direction direction, int position) const {
+    [[nodiscard]] Cell top(const Box& box, Direction direction, std::size_t position) const {
         if (direction == Direction::Red)
             return at(position, box.g1, box.b1) - at(position, box.g1, box.b0) - at(position, box.g0, box.b1) +
                    at(position, box.g0, box.b0);
@@ -159,23 +158,26 @@ public:
     }
 
 private:
-    Cell& at(int r, int g, int b) { return m_cells[getIndex(r, g, b)]; }
+    Cell& at(std::size_t r, std::size_t g, std::size_t b) { return m_cells[getIndex(r, g, b)]; }
 
-    [[nodiscard]] const Cell& at(int r, int g, int b) const { return m_cells[getIndex(r, g, b)]; }
+    [[nodiscard]] const Cell& at(std::size_t r, std::size_t g, std::size_t b) const {
+        return m_cells[getIndex(r, g, b)];
+    }
 
     std::vector<Cell> m_cells = std::vector<Cell>(k_totalSize);
 };
 
 struct BestCut {
     double score = 0.0;
-    int position = -1;
+    std::optional<std::size_t> position;
 };
 
-BestCut maximise(const Moments& moments, const Box& box, Direction direction, int first, int last, const Cell& whole) {
+BestCut maximise(const Moments& moments, const Box& box, Direction direction, std::size_t first, std::size_t last,
+    const Cell& whole) {
     const auto base = moments.bottom(box, direction);
 
     BestCut best;
-    for (int i = first; i < last; i++) {
+    for (std::size_t i = first; i < last; i++) {
         auto half = base + moments.top(box, direction, i);
         if (half.w == 0)
             continue;
@@ -201,20 +203,26 @@ std::optional<Box> cut(const Moments& moments, Box& box) {
     const auto green = maximise(moments, box, Direction::Green, box.g0 + 1, box.g1, whole);
     const auto blue = maximise(moments, box, Direction::Blue, box.b0 + 1, box.b1, whole);
 
-    if (red.score >= green.score && red.score >= blue.score) {
-        if (red.position < 0)
-            return std::nullopt;
-        return box.split(Direction::Red, red.position);
+    auto direction = Direction::Red;
+    auto best = red;
+    if (green.score > best.score) {
+        direction = Direction::Green;
+        best = green;
     }
-    if (green.score >= blue.score)
-        return box.split(Direction::Green, green.position);
-    return box.split(Direction::Blue, blue.position);
+    if (blue.score > best.score) {
+        direction = Direction::Blue;
+        best = blue;
+    }
+
+    if (!best.position)
+        return std::nullopt;
+    return box.split(direction, *best.position);
 }
 
 } // namespace
 
 std::vector<Argb> wu(const std::vector<Argb>& pixels, uint16_t maxColours) {
-    if (maxColours <= 0 || maxColours > 256 || pixels.empty())
+    if (maxColours == 0 || maxColours > k_maxColors || pixels.empty())
         return {};
 
     std::size_t colourCount = maxColours;
