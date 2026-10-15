@@ -89,7 +89,8 @@ std::size_t getIndex(std::size_t r, std::size_t g, std::size_t b) {
 
 class Moments {
 public:
-    void addPixel(Argb pixel) {
+    void addPixel(Argb pixel, std::uint32_t count) {
+        const int64_t weight = count;
         const int64_t red = pixel.red();
         const int64_t green = pixel.green();
         const int64_t blue = pixel.blue();
@@ -99,11 +100,11 @@ public:
         const auto indexB = (static_cast<std::size_t>(pixel.blue()) >> k_bitsToRemove) + 1;
 
         at(indexR, indexG, indexB) += Cell{
-            .w = 1,
-            .r = red,
-            .g = green,
-            .b = blue,
-            .m2 = static_cast<double>(red * red + green * green + blue * blue),
+            .w = weight,
+            .r = red * weight,
+            .g = green * weight,
+            .b = blue * weight,
+            .m2 = static_cast<double>((red * red + green * green + blue * blue) * weight),
         };
     }
 
@@ -222,13 +223,17 @@ std::optional<Box> cut(const Moments& moments, Box& box) {
 } // namespace
 
 std::vector<Argb> wu(const std::vector<Argb>& pixels, uint16_t maxColours) {
-    if (maxColours == 0 || maxColours > k_maxColors || pixels.empty())
+    return internal::wu(internal::uniquePixels(pixels, false), maxColours);
+}
+
+std::vector<Argb> internal::wu(const WeightedPixels& pixels, uint16_t maxColours) {
+    if (maxColours == 0 || maxColours > k_maxColors || pixels.pixels.empty())
         return {};
 
     std::size_t colourCount = maxColours;
     Moments moments;
-    for (const auto pixel : pixels)
-        moments.addPixel(pixel);
+    for (std::size_t i = 0; i < pixels.pixels.size(); i++)
+        moments.addPixel(pixels.pixels[i], pixels.counts[i]);
     moments.accumulate();
 
     std::vector<Box> cubes(k_maxColors);

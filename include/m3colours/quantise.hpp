@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
+#include <utility>
 #include <vector>
 
 #include "common.hpp"
@@ -27,8 +29,21 @@ struct Lab {
 
 struct QuantiserResult {
     std::map<Argb, uint32_t> colourToCount;
-    std::map<Argb, Argb> inputToCluster;
+    std::vector<std::pair<Argb, Argb>> inputToCluster;
 };
+
+struct WeightedPixels {
+    std::vector<Argb> pixels;
+    std::vector<std::uint32_t> counts;
+};
+
+namespace internal {
+
+WeightedPixels uniquePixels(const std::vector<Argb>& pixels, bool opaqueOnly);
+std::vector<Argb> wu(const WeightedPixels& pixels, uint16_t maxColours);
+QuantiserResult wsMeans(const WeightedPixels& pixels, const std::vector<Argb>& startingClusters, uint16_t maxColours);
+
+} // namespace internal
 
 std::vector<Argb> wu(const std::vector<Argb>& pixels, uint16_t maxColours);
 

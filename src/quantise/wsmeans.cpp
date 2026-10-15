@@ -1,6 +1,6 @@
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
-#include <unordered_map>
 
 #include "m3colours/quantise.hpp"
 
@@ -30,12 +30,11 @@ struct Centroid {
 
 class WsMeans {
 public:
-    WsMeans(const std::vector<Argb>& inputPixels, const std::vector<Argb>& startingClusters, std::size_t maxColours);
+    WsMeans(const WeightedPixels& inputPixels, const std::vector<Argb>& startingClusters, std::size_t maxColours);
 
     QuantiserResult run();
 
 private:
-    void collectUniquePixels(const std::vector<Argb>& inputPixels);
     void initialiseClusters(const std::vector<Argb>& startingClusters, std::size_t clusterCount);
     void assignRandomClusters();
     void computeClusterDistances();
@@ -47,18 +46,21 @@ private:
         return m_clusterDistances[(i * m_clusters.size()) + j];
     }
 
-    std::vector<Argb> m_pixels;
+    const std::vector<Argb>& m_pixels;
+    const std::vector<std::uint32_t>& m_counts;
     std::vector<Lab> m_points;
-    std::vector<std::uint32_t> m_counts;
     std::vector<Lab> m_clusters;
     std::vector<std::size_t> m_clusterIndices;
     std::vector<double> m_clusterDistances;
     std::vector<std::uint32_t> m_populations;
 };
 
-WsMeans::WsMeans(
-    const std::vector<Argb>& inputPixels, const std::vector<Argb>& startingClusters, std::size_t maxColours) {
-    collectUniquePixels(inputPixels);
+WsMeans::WsMeans(const WeightedPixels& inputPixels, const std::vector<Argb>& startingClusters, std::size_t maxColours)
+    : m_pixels(inputPixels.pixels)
+    , m_counts(inputPixels.counts) {
+    m_points.reserve(m_pixels.size());
+    for (const auto pixel : m_pixels)
+        m_points.emplace_back(pixel);
 
     auto clusterCount = std::min(maxColours, m_points.size());
     if (!startingClusters.empty())
@@ -78,23 +80,6 @@ QuantiserResult WsMeans::run() {
         recomputeCentres();
     }
     return buildResult();
-}
-
-void WsMeans::collectUniquePixels(const std::vector<Argb>& inputPixels) {
-    std::unordered_map<std::uint32_t, std::size_t> indexOf;
-    m_pixels.reserve(inputPixels.size());
-    m_points.reserve(inputPixels.size());
-    m_counts.reserve(inputPixels.size());
-    for (const auto pixel : inputPixels) {
-        const auto [it, inserted] = indexOf.try_emplace(pixel.value(), m_pixels.size());
-        if (inserted) {
-            m_pixels.push_back(pixel);
-            m_points.emplace_back(pixel);
-            m_counts.push_back(1);
-        } else {
-            m_counts[it->second]++;
-        }
-    }
 }
 
 void WsMeans::initialiseClusters(const std::vector<Argb>& startingClusters, std::size_t clusterCount) {
@@ -202,8 +187,10 @@ QuantiserResult WsMeans::buildResult() const {
             result.colourToCount[argb] += m_populations[i];
     }
 
+    result.inputToCluster.reserve(m_pixels.size());
     for (std::size_t i = 0; i < m_pixels.size(); i++)
-        result.inputToCluster.emplace(m_pixels[i], clusterArgbs[m_clusterIndices[i]]);
+        result.inputToCluster.emplace_back(m_pixels[i], clusterArgbs[m_clusterIndices[i]]);
+    std::ranges::sort(result.inputToCluster, {}, &std::pair<Argb, Argb>::first);
 
     return result;
 }
@@ -212,7 +199,12 @@ QuantiserResult WsMeans::buildResult() const {
 
 QuantiserResult wsMeans(
     const std::vector<Argb>& inputPixels, const std::vector<Argb>& startingClusters, uint16_t maxColours) {
-    if (maxColours == 0 || inputPixels.empty())
+    return internal::wsMeans(internal::uniquePixels(inputPixels, false), startingClusters, maxColours);
+}
+
+QuantiserResult internal::wsMeans(
+    const WeightedPixels& inputPixels, const std::vector<Argb>& startingClusters, uint16_t maxColours) {
+    if (maxColours == 0 || inputPixels.pixels.empty())
         return {};
 
     return WsMeans(inputPixels, startingClusters, std::min<std::size_t>(maxColours, k_maxColours)).run();
