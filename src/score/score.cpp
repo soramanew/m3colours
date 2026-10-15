@@ -4,7 +4,6 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <optional>
 
 #include "m3colours/hct.hpp"
 
@@ -29,37 +28,56 @@ constexpr std::size_t sanitiseDegreesInt(int degrees) {
     return static_cast<std::size_t>(degrees < 0 ? degrees + 360 : degrees);
 }
 
-std::vector<ScoredHct> scoreColours(const std::map<Argb, std::uint32_t>& coloursToPopulation, bool filter) {
+struct HueAnalysis {
     std::vector<Hct> coloursHct;
-    coloursHct.reserve(coloursToPopulation.size());
+    std::array<double, 360> excitedProportions{};
+};
+
+HueAnalysis analyseHues(const std::map<Argb, std::uint32_t>& coloursToPopulation) {
+    HueAnalysis analysis;
+    analysis.coloursHct.reserve(coloursToPopulation.size());
     std::array<double, 360> huePopulation{};
     double populationSum = 0.0;
     for (const auto& [argb, population] : coloursToPopulation) {
-        const auto& hct = coloursHct.emplace_back(argb);
+        const auto& hct = analysis.coloursHct.emplace_back(argb);
         const auto hue = sanitiseDegreesInt(static_cast<int>(std::floor(hct.hue())));
         huePopulation[hue] += population;
         populationSum += population;
     }
 
-    std::array<double, 360> hueExcitedProportions{};
     for (int hue = 0; hue < 360; hue++) {
         const auto proportion = huePopulation[static_cast<std::size_t>(hue)] / populationSum;
         for (int i = hue - 14; i < hue + 16; i++)
-            hueExcitedProportions[sanitiseDegreesInt(i)] += proportion;
+            analysis.excitedProportions[sanitiseDegreesInt(i)] += proportion;
     }
+    return analysis;
+}
+
+double excitedProportion(const HueAnalysis& analysis, const Hct& hct) {
+    return analysis.excitedProportions[sanitiseDegreesInt(static_cast<int>(std::round(hct.hue())))];
+}
+
+bool passesFilter(const Hct& hct, double proportion) {
+    return hct.chroma() >= k_cutoffChroma && proportion > k_cutoffExcitedProportion;
+}
+
+double scoreColour(const Hct& hct, double proportion) {
+    const auto proportionScore = proportion * 100.0 * k_weightProportion;
+    const auto chromaWeight = hct.chroma() < k_targetChroma ? k_weightChromaBelow : k_weightChromaAbove;
+    const auto chromaScore = (hct.chroma() - k_targetChroma) * chromaWeight;
+    return proportionScore + chromaScore;
+}
+
+std::vector<ScoredHct> scoreColours(const std::map<Argb, std::uint32_t>& coloursToPopulation, bool filter) {
+    const auto analysis = analyseHues(coloursToPopulation);
 
     std::vector<ScoredHct> scoredHct;
-    scoredHct.reserve(coloursHct.size());
-    for (const auto& hct : coloursHct) {
-        const auto hue = sanitiseDegreesInt(static_cast<int>(std::round(hct.hue())));
-        const auto proportion = hueExcitedProportions[hue];
-        if (filter && (hct.chroma() < k_cutoffChroma || proportion <= k_cutoffExcitedProportion))
+    scoredHct.reserve(analysis.coloursHct.size());
+    for (const auto& hct : analysis.coloursHct) {
+        const auto proportion = excitedProportion(analysis, hct);
+        if (filter && !passesFilter(hct, proportion))
             continue;
-
-        const auto proportionScore = proportion * 100.0 * k_weightProportion;
-        const auto chromaWeight = hct.chroma() < k_targetChroma ? k_weightChromaBelow : k_weightChromaAbove;
-        const auto chromaScore = (hct.chroma() - k_targetChroma) * chromaWeight;
-        scoredHct.push_back({ .hct = hct, .score = proportionScore + chromaScore });
+        scoredHct.push_back({ .hct = hct, .score = scoreColour(hct, proportion) });
     }
     std::ranges::stable_sort(scoredHct, [](const ScoredHct& a, const ScoredHct& b) {
         return a.score > b.score;
@@ -67,15 +85,30 @@ std::vector<ScoredHct> scoreColours(const std::map<Argb, std::uint32_t>& colours
     return scoredHct;
 }
 
-std::optional<Hct> pickAboveCutoff(const std::vector<ScoredHct>& scoredHct) {
-    for (int cutoff = 20; cutoff >= 0; cutoff--) {
-        for (const auto& [hct, _] : scoredHct) {
-            if (hct.chroma() > cutoff && hct.tone() > cutoff * 3)
-                return hct;
+// Largest cutoff in [0, 20] with chroma > cutoff and tone > 3 * cutoff, or -1
+int maxCutoff(const Hct& hct) {
+    const auto byChroma = static_cast<int>(std::ceil(hct.chroma())) - 1;
+    auto byTone = static_cast<int>(std::ceil(hct.tone() / 3.0)) - 1;
+    if (3.0 * (byTone + 1) < hct.tone())
+        byTone++;
+    else if (3.0 * byTone >= hct.tone())
+        byTone--;
+    return std::max(std::min({ 20, byChroma, byTone }), -1);
+}
+
+struct Candidate {
+    const Hct* hct = nullptr;
+    int cutoff = -1;
+    double score = 0.0;
+
+    void offer(const Hct& candidate, int candidateCutoff, double candidateScore) {
+        if (candidateCutoff > cutoff || (candidateCutoff == cutoff && candidateScore > score)) {
+            hct = &candidate;
+            cutoff = candidateCutoff;
+            score = candidateScore;
         }
     }
-    return std::nullopt;
-}
+};
 
 } // namespace
 
@@ -110,9 +143,22 @@ std::vector<Argb> score(const std::map<Argb, std::uint32_t>& coloursToPopulation
 }
 
 Argb scoreSingle(const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options) {
-    auto primary = pickAboveCutoff(scoreColours(coloursToPopulation, options.filter));
-    if (!primary && options.filter)
-        primary = pickAboveCutoff(scoreColours(coloursToPopulation, false));
+    const auto analysis = analyseHues(coloursToPopulation);
+
+    Candidate filtered;
+    Candidate unfiltered;
+    for (const auto& hct : analysis.coloursHct) {
+        const auto cutoff = maxCutoff(hct);
+        if (cutoff < 0)
+            continue;
+        const auto proportion = excitedProportion(analysis, hct);
+        const auto colourScore = scoreColour(hct, proportion);
+        unfiltered.offer(hct, cutoff, colourScore);
+        if (options.filter && passesFilter(hct, proportion))
+            filtered.offer(hct, cutoff, colourScore);
+    }
+
+    const auto* primary = filtered.hct ? filtered.hct : unfiltered.hct;
     return primary ? primary->toArgb() : options.fallbackColour;
 }
 
