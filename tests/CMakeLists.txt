@@ -15,6 +15,7 @@ add_executable(m3colours_tests
     quantise/celebi_test.cpp
     quantise/wsmeans_test.cpp
     quantise/wu_test.cpp
+    scheme/scheme_test.cpp
     score/score_test.cpp
     temperature/temperature_test.cpp
 )
