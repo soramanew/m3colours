@@ -14,6 +14,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define SWATCH_FORMAT "\x1b[48;2;%u;%u;%um   \x1b[0m"
+
 namespace {
 
 constexpr std::array k_allVariants = {
@@ -52,7 +54,7 @@ PrintFlags operator&(PrintFlags lhs, PrintFlags rhs) {
 enum class UsageCause : std::uint8_t {
     None,
     Help,
-    Other
+    Other,
 };
 
 struct Args {
@@ -189,8 +191,11 @@ m3colours::scheme::DynamicScheme schemeForVariant(m3colours::Hct source, const s
 void printVariant(m3colours::Hct source, const std::string& variant, bool dark) {
     std::cout << "\n-- Scheme (" << variant << ") --\n\n";
     const auto scheme = schemeForVariant(source, variant, dark);
-    for (const auto* colour : m3colours::dynamiccolour::material::allColours())
-        std::printf("%-32s #%06x\n", colour->name().c_str(), scheme.getArgb(*colour).value() & 0xffffffu);
+    for (const auto* colour : m3colours::dynamiccolour::material::allColours()) {
+        const auto argb = scheme.getArgb(*colour);
+        std::printf("%-32s %06x " SWATCH_FORMAT "\n", colour->name().c_str(), argb.value() & 0xffffffu, argb.red(),
+            argb.green(), argb.blue());
+    }
 }
 
 void printScheme(m3colours::Argb source, const Args& args) {
@@ -235,15 +240,18 @@ int main(int argc, char* argv[]) {
                 res->colourToCount.begin(), res->colourToCount.end());
             std::ranges::sort(entries, std::ranges::greater{}, &decltype(entries)::value_type::second);
             for (const auto& [colour, count] : entries)
-                std::printf("#%08x: %u\n", colour.value(), count);
+                std::printf("%06x: %u\n", colour.value() & 0xffffffu, count);
         }
 
         const auto ranked = m3colours::score::score(res->colourToCount);
 
         if (args.printFlags == PrintFlags::Default || (args.printFlags & PrintFlags::Score) == PrintFlags::Score) {
             std::cout << "\n-- Score --\n\n";
-            for (std::size_t i = 0; i < ranked.size(); ++i)
-                std::printf("%zu. #%08x\n", i + 1, ranked[i].value());
+            for (std::size_t i = 0; i < ranked.size(); ++i) {
+                const auto c = ranked[i];
+                std::printf(
+                    "%zu. %06x " SWATCH_FORMAT "\n", i + 1, c.value() & 0xffffffu, c.red(), c.green(), c.blue());
+            }
         }
 
         printScheme(ranked[0], args);
