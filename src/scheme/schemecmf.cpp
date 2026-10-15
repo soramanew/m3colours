@@ -7,6 +7,14 @@ namespace m3colours::scheme {
 
 namespace {
 
+double hueByTertiaryBand(double tertiaryHue, double low, double high, double below, double within, double above) {
+    if (tertiaryHue <= low)
+        return below;
+    if (tertiaryHue <= high)
+        return within;
+    return above;
+}
+
 using palettes::TonalPalette;
 
 DynamicSchemeOptions cmfOptions(
@@ -48,22 +56,22 @@ SchemeCmf::SchemeCmf(
 
 double SchemeCmf::getErrorHue(double primaryHue, double tertiaryHue) {
     if (primaryHue <= 8.0)
-        return tertiaryHue <= 24.0 ? 28.0 : (tertiaryHue <= 32.0 ? 16.0 : 20.0);
+        return hueByTertiaryBand(tertiaryHue, 24.0, 32.0, 28.0, 16.0, 20.0);
     if (primaryHue <= 16.0)
-        return tertiaryHue <= 24.0 ? 32.0 : (tertiaryHue <= 32.0 ? 20.0 : 24.0);
+        return hueByTertiaryBand(tertiaryHue, 24.0, 32.0, 32.0, 20.0, 24.0);
     if (primaryHue <= 20.0)
-        return tertiaryHue <= 28.0 ? 32.0 : (tertiaryHue <= 32.0 ? 24.0 : 28.0);
+        return hueByTertiaryBand(tertiaryHue, 28.0, 32.0, 32.0, 24.0, 28.0);
     if (primaryHue <= 28.0)
         return tertiaryHue <= 24.0 ? 32.0 : 16.0;
     if (primaryHue <= 32.0)
-        return tertiaryHue <= 20.0 ? 24.0 : (tertiaryHue <= 28.0 ? 16.0 : 20.0);
+        return hueByTertiaryBand(tertiaryHue, 20.0, 28.0, 24.0, 16.0, 20.0);
     if (primaryHue <= 40.0)
-        return tertiaryHue > 20.0 && tertiaryHue <= 28.0 ? 16.0 : 24.0;
+        return hueByTertiaryBand(tertiaryHue, 20.0, 28.0, 24.0, 16.0, 24.0);
     if (primaryHue <= 152.0)
-        return tertiaryHue > 24.0 && tertiaryHue <= 36.0 ? 20.0 : 32.0;
+        return hueByTertiaryBand(tertiaryHue, 24.0, 36.0, 32.0, 20.0, 32.0);
     if (primaryHue <= 272.0)
-        return tertiaryHue > 20.0 && tertiaryHue <= 28.0 ? 16.0 : 24.0;
-    return tertiaryHue > 12.0 && tertiaryHue <= 28.0 ? 32.0 : 16.0;
+        return hueByTertiaryBand(tertiaryHue, 20.0, 28.0, 24.0, 16.0, 24.0);
+    return hueByTertiaryBand(tertiaryHue, 12.0, 28.0, 16.0, 32.0, 16.0);
 }
 
 } // namespace m3colours::scheme

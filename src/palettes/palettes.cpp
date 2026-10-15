@@ -108,7 +108,7 @@ TonalPalette TonalPalette::fromHueAndChroma(double hue, double chroma) {
 TonalPalette::TonalPalette(double hue, double chroma, std::optional<Hct> keyColour)
     : m_hue(hue)
     , m_chroma(chroma)
-    , m_keyColour(std::move(keyColour)) {}
+    , m_keyColour(keyColour) {}
 
 const Hct& TonalPalette::keyColour() const {
     if (!m_keyColour)

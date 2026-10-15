@@ -65,7 +65,7 @@ std::optional<TonalPalette> primaryPalette2025For(Variant variant, const Hct& so
 TonalPalette primaryPaletteFor(SpecVersion spec, Variant variant, const Hct& source, bool isDark, Platform platform) {
     if (spec == SpecVersion::Spec2025) {
         if (auto palette = primaryPalette2025For(variant, source, isDark, platform))
-            return std::move(*palette);
+            return *palette;
     }
 
     switch (variant) {
@@ -119,7 +119,7 @@ std::optional<TonalPalette> secondaryPalette2025For(
 TonalPalette secondaryPaletteFor(SpecVersion spec, Variant variant, const Hct& source, bool isDark, Platform platform) {
     if (spec == SpecVersion::Spec2025) {
         if (auto palette = secondaryPalette2025For(variant, source, isDark, platform))
-            return std::move(*palette);
+            return *palette;
     }
 
     switch (variant) {
@@ -183,7 +183,7 @@ std::optional<TonalPalette> tertiaryPalette2025For(Variant variant, const Hct& s
 TonalPalette tertiaryPaletteFor(SpecVersion spec, Variant variant, const Hct& source, Platform platform) {
     if (spec == SpecVersion::Spec2025) {
         if (auto palette = tertiaryPalette2025For(variant, source, platform))
-            return std::move(*palette);
+            return *palette;
     }
 
     switch (variant) {
@@ -261,7 +261,7 @@ std::optional<TonalPalette> neutralPalette2025For(Variant variant, const Hct& so
 TonalPalette neutralPaletteFor(SpecVersion spec, Variant variant, const Hct& source, bool isDark, Platform platform) {
     if (spec == SpecVersion::Spec2025) {
         if (auto palette = neutralPalette2025For(variant, source, isDark, platform))
-            return std::move(*palette);
+            return *palette;
     }
 
     switch (variant) {
@@ -310,7 +310,7 @@ TonalPalette neutralVariantPaletteFor(
     SpecVersion spec, Variant variant, const Hct& source, bool isDark, Platform platform) {
     if (spec == SpecVersion::Spec2025) {
         if (auto palette = neutralVariantPalette2025For(variant, source, isDark, platform))
-            return std::move(*palette);
+            return *palette;
     }
 
     switch (variant) {
@@ -367,21 +367,21 @@ DynamicScheme::DynamicScheme(DynamicSchemeOptions options)
     , m_platform(options.platform)
     , m_specVersion(fallbackSpecVersion(options.specVersion, options.variant))
     , m_primaryPalette(options.primaryPalette
-                           ? std::move(*options.primaryPalette)
+                           ? *options.primaryPalette
                            : primaryPaletteFor(m_specVersion, m_variant, sourceColourHct(), m_isDark, m_platform))
     , m_secondaryPalette(options.secondaryPalette
-                             ? std::move(*options.secondaryPalette)
+                             ? *options.secondaryPalette
                              : secondaryPaletteFor(m_specVersion, m_variant, sourceColourHct(), m_isDark, m_platform))
     , m_tertiaryPalette(options.tertiaryPalette
-                            ? std::move(*options.tertiaryPalette)
+                            ? *options.tertiaryPalette
                             : tertiaryPaletteFor(m_specVersion, m_variant, sourceColourHct(), m_platform))
     , m_neutralPalette(options.neutralPalette
-                           ? std::move(*options.neutralPalette)
+                           ? *options.neutralPalette
                            : neutralPaletteFor(m_specVersion, m_variant, sourceColourHct(), m_isDark, m_platform))
-    , m_neutralVariantPalette(options.neutralVariantPalette ? std::move(*options.neutralVariantPalette)
+    , m_neutralVariantPalette(options.neutralVariantPalette ? *options.neutralVariantPalette
                                                             : neutralVariantPaletteFor(m_specVersion, m_variant,
                                                                   sourceColourHct(), m_isDark, m_platform))
-    , m_errorPalette(options.errorPalette ? std::move(*options.errorPalette)
+    , m_errorPalette(options.errorPalette ? *options.errorPalette
                                           : errorPaletteFor(m_specVersion, m_variant, sourceColourHct(), m_platform)) {
     m_toneCache.fill(std::numeric_limits<double>::quiet_NaN());
 }

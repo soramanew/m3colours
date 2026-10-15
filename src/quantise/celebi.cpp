@@ -12,7 +12,7 @@ WeightedPixels uniquePixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
     constexpr auto k_fibonacci = 0x9E3779B97F4A7C15ull;
 
     const auto capacity = std::bit_ceil(std::max<std::size_t>(16, pixels.size() * 2));
-    const auto shift = 64 - std::countr_zero(capacity);
+    const auto shift = static_cast<unsigned>(64 - std::countr_zero(capacity));
     std::vector<std::uint32_t> slots(capacity, k_empty);
 
     WeightedPixels result;
