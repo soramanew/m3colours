@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <optional>
 
 #include "m3colours/hct.hpp"
 
@@ -28,9 +29,7 @@ constexpr std::size_t sanitiseDegreesInt(int degrees) {
     return static_cast<std::size_t>(degrees < 0 ? degrees + 360 : degrees);
 }
 
-} // namespace
-
-std::vector<Argb> score(const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options) {
+std::vector<ScoredHct> scoreColours(const std::map<Argb, std::uint32_t>& coloursToPopulation, bool filter) {
     std::vector<Hct> coloursHct;
     coloursHct.reserve(coloursToPopulation.size());
     std::array<double, 360> huePopulation{};
@@ -54,7 +53,7 @@ std::vector<Argb> score(const std::map<Argb, std::uint32_t>& coloursToPopulation
     for (const auto& hct : coloursHct) {
         const auto hue = sanitiseDegreesInt(static_cast<int>(std::round(hct.hue())));
         const auto proportion = hueExcitedProportions[hue];
-        if (options.filter && (hct.chroma() < k_cutoffChroma || proportion <= k_cutoffExcitedProportion))
+        if (filter && (hct.chroma() < k_cutoffChroma || proportion <= k_cutoffExcitedProportion))
             continue;
 
         const auto proportionScore = proportion * 100.0 * k_weightProportion;
@@ -65,6 +64,23 @@ std::vector<Argb> score(const std::map<Argb, std::uint32_t>& coloursToPopulation
     std::ranges::stable_sort(scoredHct, [](const ScoredHct& a, const ScoredHct& b) {
         return a.score > b.score;
     });
+    return scoredHct;
+}
+
+std::optional<Hct> pickAboveCutoff(const std::vector<ScoredHct>& scoredHct) {
+    for (int cutoff = 20; cutoff >= 0; cutoff--) {
+        for (const auto& [hct, _] : scoredHct) {
+            if (hct.chroma() > cutoff && hct.tone() > cutoff * 3)
+                return hct;
+        }
+    }
+    return std::nullopt;
+}
+
+} // namespace
+
+std::vector<Argb> score(const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options) {
+    const auto scoredHct = scoreColours(coloursToPopulation, options.filter);
 
     const auto desired = static_cast<std::size_t>(std::max(options.desired, 0));
     std::vector<const Hct*> chosenColours;
@@ -91,6 +107,13 @@ std::vector<Argb> score(const std::map<Argb, std::uint32_t>& coloursToPopulation
     for (const auto* chosen : chosenColours)
         colours.push_back(chosen->toArgb());
     return colours;
+}
+
+Argb scoreSingle(const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options) {
+    auto primary = pickAboveCutoff(scoreColours(coloursToPopulation, options.filter));
+    if (!primary && options.filter)
+        primary = pickAboveCutoff(scoreColours(coloursToPopulation, false));
+    return primary ? primary->toArgb() : options.fallbackColour;
 }
 
 } // namespace m3colours::score
