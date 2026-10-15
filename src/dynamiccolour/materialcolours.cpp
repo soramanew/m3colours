@@ -61,31 +61,17 @@ double chromaAt(double hue, double chroma, double tone) {
         .chroma;
 }
 
-double findBestToneForChroma(double hue, double chroma, double tone, bool byDecreasingTone) {
-    auto answer = tone;
-    auto bestChroma = chromaAt(hue, chroma, answer);
-    while (bestChroma < chroma) {
-        if (tone < 0.0 || tone > 100.0)
-            break;
-        tone += byDecreasingTone ? -1.0 : 1.0;
-        const auto newChroma = chromaAt(hue, chroma, tone);
-        if (bestChroma < newChroma) {
-            bestChroma = newChroma;
-            answer = tone;
-        }
-    }
-    return answer;
+double tMaxC(const TonalPalette& palette, double lowerBound = 0.0, double upperBound = 100.0) {
+    return std::clamp(palette.toneOfMaxChroma(), lowerBound, upperBound);
 }
 
-double tMaxC(
-    const TonalPalette& palette, double lowerBound = 0.0, double upperBound = 100.0, double chromaMultiplier = 1.0) {
-    const auto answer = findBestToneForChroma(palette.hue(), palette.chroma() * chromaMultiplier, 100.0, true);
-    return std::clamp(answer, lowerBound, upperBound);
+double tMaxC(const TonalPalette& palette, double lowerBound, double upperBound, double chromaMultiplier) {
+    return tMaxC(
+        TonalPalette::fromHueAndChroma(palette.hue(), palette.chroma() * chromaMultiplier), lowerBound, upperBound);
 }
 
 double tMinC(const TonalPalette& palette, double lowerBound = 0.0, double upperBound = 100.0) {
-    const auto answer = findBestToneForChroma(palette.hue(), palette.chroma(), 0.0, false);
-    return std::clamp(answer, lowerBound, upperBound);
+    return std::clamp(palette.toneOfMinChroma(), lowerBound, upperBound);
 }
 
 double findDesiredChromaByTone(double hue, double chroma, double tone, bool byDecreasingTone) {

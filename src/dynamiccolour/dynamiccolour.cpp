@@ -222,17 +222,17 @@ double toneFor2025(const DynamicScheme& scheme, const DynamicColour& colour) {
     return dualBackgroundTone(scheme, *bg, *bg2, answer, desiredRatio);
 }
 
-Hct hctFor2025(const DynamicScheme& scheme, const DynamicColour& colour) {
+Argb argbFor2025(const DynamicScheme& scheme, const DynamicColour& colour) {
     const auto& palette = colour.palette(scheme);
     const auto tone = colour.getTone(scheme);
     const auto multiplier = colour.chromaMultiplier(scheme);
     if (isExactly(multiplier, 1.0))
-        return palette.getHct(tone);
+        return palette.tone(tone);
 
     const auto chroma = palette.chroma() * multiplier;
     if (isExactly(tone, 99.0) && Hct::isYellow(palette.hue()))
-        return palettes::TonalPalette::fromHueAndChroma(palette.hue(), chroma).getHct(tone);
-    return { palette.hue(), chroma, tone };
+        return palettes::TonalPalette::fromHueAndChroma(palette.hue(), chroma).tone(tone);
+    return hct::solveToArgb(palette.hue(), chroma, tone);
 }
 
 } // namespace
@@ -250,7 +250,8 @@ double ContrastCurve::get(double contrastLevel) const {
 }
 
 DynamicColour::DynamicColour(DynamicColourOptions options)
-    : m_name(std::move(options.name))
+    : m_index(s_nextIndex++)
+    , m_name(std::move(options.name))
     , m_isBackground(options.isBackground)
     , m_base(std::move(options.base))
     , m_spec2025(std::move(options.spec2025))
@@ -309,24 +310,26 @@ std::optional<ToneDeltaPair> DynamicColour::toneDeltaPair(const DynamicScheme& s
 }
 
 Argb DynamicColour::getArgb(const DynamicScheme& scheme) const {
-    return getHct(scheme).toArgb();
+    if (scheme.specVersion() == SpecVersion::Spec2021)
+        return palette(scheme).tone(getTone(scheme));
+    return argbFor2025(scheme, *this);
 }
 
 Hct DynamicColour::getHct(const DynamicScheme& scheme) const {
-    if (scheme.specVersion() == SpecVersion::Spec2021)
-        return palette(scheme).getHct(getTone(scheme));
-    return hctFor2025(scheme, *this);
+    return Hct{ getArgb(scheme) };
 }
 
 double DynamicColour::getTone(const DynamicScheme& scheme) const {
     auto& cache = scheme.m_toneCache;
-    if (const auto it = cache.find(this); it != cache.end())
-        return it->second;
+    const auto cacheable = m_index < cache.size();
+    if (cacheable && !std::isnan(cache[m_index]))
+        return cache[m_index];
 
     const auto tone = scheme.specVersion() == SpecVersion::Spec2021 // format hack
                           ? toneFor2021(scheme, *this)
                           : toneFor2025(scheme, *this);
-    cache.emplace(this, tone);
+    if (cacheable)
+        cache[m_index] = tone;
     return tone;
 }
 

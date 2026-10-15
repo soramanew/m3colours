@@ -1,11 +1,13 @@
 #pragma once
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "common.hpp"
@@ -136,6 +138,9 @@ public:
 private:
     [[nodiscard]] const ColourSpec& spec(const DynamicScheme& scheme) const;
 
+    inline static std::size_t s_nextIndex = 0;
+
+    std::size_t m_index;
     std::string m_name;
     bool m_isBackground;
     ColourSpec m_base;
@@ -179,7 +184,7 @@ public:
     [[nodiscard]] const palettes::TonalPalette& errorPalette() const { return m_errorPalette; }
     // clang-format on
 
-    [[nodiscard]] DynamicScheme asLightStandardContrast() const;
+    [[nodiscard]] const DynamicScheme& asLightStandardContrast() const;
 
     static double getPiecewiseHue(
         const Hct& sourceColourHct, std::span<const double> hueBreakpoints, std::span<const double> hues);
@@ -269,7 +274,8 @@ private:
     palettes::TonalPalette m_neutralPalette;
     palettes::TonalPalette m_neutralVariantPalette;
     palettes::TonalPalette m_errorPalette;
-    mutable std::unordered_map<const DynamicColour*, double> m_toneCache;
+    mutable std::array<double, 64> m_toneCache;
+    mutable std::shared_ptr<const DynamicScheme> m_lightStandardContrast;
 };
 
 namespace material {

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdlib>
 
 namespace m3colours::palettes {
@@ -66,6 +67,30 @@ bool isTone99(double tone) {
     return !(tone < 99.0) && !(tone > 99.0);
 }
 
+bool isIntegerTone(double tone) {
+    return tone >= 0.0 && tone <= 100.0 && !(tone > std::floor(tone));
+}
+
+double chromaAt(double hue, double chroma, double tone) {
+    return jchFromArgb(hct::solveToArgb(hue, chroma, tone)).chroma;
+}
+
+double findBestToneForChroma(double hue, double chroma, double tone, bool byDecreasingTone) {
+    auto answer = tone;
+    auto bestChroma = chromaAt(hue, chroma, answer);
+    while (bestChroma < chroma) {
+        if (tone < 0.0 || tone > 100.0)
+            break;
+        tone += byDecreasingTone ? -1.0 : 1.0;
+        const auto newChroma = chromaAt(hue, chroma, tone);
+        if (bestChroma < newChroma) {
+            bestChroma = newChroma;
+            answer = tone;
+        }
+    }
+    return answer;
+}
+
 } // namespace
 
 TonalPalette TonalPalette::fromArgb(Argb argb) {
@@ -77,27 +102,48 @@ TonalPalette TonalPalette::fromHct(const Hct& hct) {
 }
 
 TonalPalette TonalPalette::fromHueAndChroma(double hue, double chroma) {
-    return { hue, chroma, createKeyColour(hue, chroma) };
+    return { hue, chroma, std::nullopt };
 }
 
-TonalPalette::TonalPalette(double hue, double chroma, Hct keyColour)
+TonalPalette::TonalPalette(double hue, double chroma, std::optional<Hct> keyColour)
     : m_hue(hue)
     , m_chroma(chroma)
-    , m_keyColour(keyColour) {}
+    , m_keyColour(std::move(keyColour)) {}
+
+const Hct& TonalPalette::keyColour() const {
+    if (!m_keyColour)
+        m_keyColour = createKeyColour(m_hue, m_chroma);
+    return *m_keyColour;
+}
 
 Argb TonalPalette::tone(double tone) const {
-    if (const auto it = m_cache.find(tone); it != m_cache.end())
-        return it->second;
+    const auto cacheable = isIntegerTone(tone);
+    auto& cached = m_toneCache[cacheable ? static_cast<std::size_t>(tone) : 0];
+    if (cacheable && cached != 0)
+        return Argb{ cached };
 
     const auto argb = isTone99(tone) && Hct::isYellow(m_hue) // format hack
                           ? averageArgb(this->tone(98.0), this->tone(100.0))
                           : hct::solveToArgb(m_hue, m_chroma, tone);
-    m_cache.emplace(tone, argb);
+    if (cacheable)
+        cached = argb.value();
     return argb;
 }
 
 Hct TonalPalette::getHct(double tone) const {
     return Hct{ this->tone(tone) };
+}
+
+double TonalPalette::toneOfMaxChroma() const {
+    if (!m_toneOfMaxChroma)
+        m_toneOfMaxChroma = findBestToneForChroma(m_hue, m_chroma, 100.0, true);
+    return *m_toneOfMaxChroma;
+}
+
+double TonalPalette::toneOfMinChroma() const {
+    if (!m_toneOfMinChroma)
+        m_toneOfMinChroma = findBestToneForChroma(m_hue, m_chroma, 0.0, false);
+    return *m_toneOfMinChroma;
 }
 
 CorePalette CorePalette::of(Argb argb) {

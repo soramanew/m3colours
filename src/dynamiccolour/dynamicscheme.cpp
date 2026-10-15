@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <limits>
 #include <stdexcept>
 
 #include "m3colours/dislike.hpp"
@@ -381,14 +382,21 @@ DynamicScheme::DynamicScheme(DynamicSchemeOptions options)
                                                             : neutralVariantPaletteFor(m_specVersion, m_variant,
                                                                   sourceColourHct(), m_isDark, m_platform))
     , m_errorPalette(options.errorPalette ? std::move(*options.errorPalette)
-                                          : errorPaletteFor(m_specVersion, m_variant, sourceColourHct(), m_platform)) {}
+                                          : errorPaletteFor(m_specVersion, m_variant, sourceColourHct(), m_platform)) {
+    m_toneCache.fill(std::numeric_limits<double>::quiet_NaN());
+}
 
-DynamicScheme DynamicScheme::asLightStandardContrast() const {
-    auto copy = *this;
-    copy.m_isDark = false;
-    copy.m_contrastLevel = 0.0;
-    copy.m_toneCache.clear();
-    return copy;
+const DynamicScheme& DynamicScheme::asLightStandardContrast() const {
+    if (!m_isDark && !(m_contrastLevel < 0.0) && !(m_contrastLevel > 0.0))
+        return *this;
+    if (!m_lightStandardContrast) {
+        auto copy = std::make_shared<DynamicScheme>(*this);
+        copy->m_isDark = false;
+        copy->m_contrastLevel = 0.0;
+        copy->m_toneCache.fill(std::numeric_limits<double>::quiet_NaN());
+        m_lightStandardContrast = std::move(copy);
+    }
+    return *m_lightStandardContrast;
 }
 
 double DynamicScheme::getPiecewiseHue(

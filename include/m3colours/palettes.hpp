@@ -1,7 +1,8 @@
 #pragma once
 
+#include <array>
+#include <cstdint>
 #include <optional>
-#include <unordered_map>
 
 #include "common.hpp"
 #include "hct.hpp"
@@ -17,19 +18,23 @@ public:
     // clang-format off
     [[nodiscard]] double hue() const { return m_hue; }
     [[nodiscard]] double chroma() const { return m_chroma; }
-    [[nodiscard]] const Hct& keyColour() const { return m_keyColour; }
     // clang-format on
 
+    [[nodiscard]] const Hct& keyColour() const;
     [[nodiscard]] Argb tone(double tone) const;
     [[nodiscard]] Hct getHct(double tone) const;
+    [[nodiscard]] double toneOfMaxChroma() const;
+    [[nodiscard]] double toneOfMinChroma() const;
 
 private:
-    TonalPalette(double hue, double chroma, Hct keyColour);
+    TonalPalette(double hue, double chroma, std::optional<Hct> keyColour);
 
     double m_hue;
     double m_chroma;
-    Hct m_keyColour;
-    mutable std::unordered_map<double, Argb> m_cache;
+    mutable std::optional<Hct> m_keyColour;
+    mutable std::optional<double> m_toneOfMaxChroma;
+    mutable std::optional<double> m_toneOfMinChroma;
+    mutable std::array<std::uint32_t, 101> m_toneCache{};
 };
 
 struct CorePalettes {
