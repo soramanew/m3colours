@@ -4,6 +4,7 @@ include(GoogleTest)
 add_executable(m3colours_tests
     blend/blend_test.cpp
     contrast/contrast_test.cpp
+    dislike/dislike_test.cpp
     hct/hct_round_trip_test.cpp
     hct/hct_test.cpp
     quantise/celebi_test.cpp
