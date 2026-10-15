@@ -57,6 +57,9 @@ add_library(m3colours
     src/quantise/lab.cpp
     src/quantise/wsmeans.cpp
     src/quantise/wu.cpp
+    src/scheme/scheme.cpp
+    src/scheme/schemeandroid.cpp
+    src/scheme/schemecmf.cpp
     src/score/score.cpp
     src/temperature/temperature.cpp
 )
