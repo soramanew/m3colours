@@ -34,7 +34,10 @@ if(PROJECT_IS_TOP_LEVEL)
     )
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(-Wunused-lambda-capture -Wno-nonportable-include-path)
+        add_compile_options(
+            -Wunused-lambda-capture -Wno-nonportable-include-path
+            -Wno-missing-designated-field-initializers
+        )
     endif()
 endif()
 
