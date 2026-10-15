@@ -46,6 +46,7 @@ add_library(m3colours
     src/hct/hct.cpp
     src/hct/solver.cpp
     src/hct/viewingconditions.cpp
+    src/palettes/palettes.cpp
     src/quantise/celebi.cpp
     src/quantise/lab.cpp
     src/quantise/wsmeans.cpp
