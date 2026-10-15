@@ -42,6 +42,9 @@ add_library(m3colours
     src/blend/blend.cpp
     src/contrast/contrast.cpp
     src/dislike/dislike.cpp
+    src/dynamiccolour/dynamiccolour.cpp
+    src/dynamiccolour/dynamicscheme.cpp
+    src/dynamiccolour/materialcolours.cpp
     src/hct/cam16.cpp
     src/hct/hct.cpp
     src/hct/solver.cpp
