@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <numeric>
 
 #include "m3colours/quantise.hpp"
 
@@ -42,16 +44,14 @@ private:
     void recomputeCentres();
     [[nodiscard]] QuantiserResult buildResult() const;
 
-    [[nodiscard]] double clusterDistance(std::size_t i, std::size_t j) const {
-        return m_clusterDistances[(i * m_clusters.size()) + j];
-    }
-
     const std::vector<Argb>& m_pixels;
     const std::vector<std::uint32_t>& m_counts;
     std::vector<Lab> m_points;
     std::vector<Lab> m_clusters;
-    std::vector<std::size_t> m_clusterIndices;
+    std::vector<std::uint8_t> m_clusterIndices;
     std::vector<double> m_clusterDistances;
+    std::vector<double> m_neighbourDistances;
+    std::vector<std::uint16_t> m_neighbourIndices;
     std::vector<std::uint32_t> m_populations;
 };
 
@@ -69,6 +69,8 @@ WsMeans::WsMeans(const WeightedPixels& inputPixels, const std::vector<Argb>& sta
     initialiseClusters(startingClusters, clusterCount);
     assignRandomClusters();
     m_clusterDistances.resize(clusterCount * clusterCount);
+    m_neighbourDistances.resize(clusterCount * clusterCount);
+    m_neighbourIndices.resize(clusterCount * clusterCount);
     m_populations.resize(clusterCount);
 }
 
@@ -103,8 +105,8 @@ void WsMeans::assignRandomClusters() {
     m_clusterIndices.reserve(m_points.size());
     reseed();
     for (std::size_t i = 0; i < m_points.size(); i++)
-        m_clusterIndices.push_back(
-            static_cast<std::size_t>(std::rand()) % m_clusters.size()); // NOLINT(misc-predictable-rand)
+        m_clusterIndices.push_back(static_cast<std::uint8_t>(
+            static_cast<std::size_t>(std::rand()) % m_clusters.size())); // NOLINT(misc-predictable-rand)
 }
 
 void WsMeans::computeClusterDistances() {
@@ -117,23 +119,42 @@ void WsMeans::computeClusterDistances() {
             m_clusterDistances[(j * clusterCount) + i] = distance;
         }
     }
+
+    std::vector<std::uint16_t> order(clusterCount);
+    for (std::size_t i = 0; i < clusterCount; i++) {
+        const auto* row = &m_clusterDistances[i * clusterCount];
+        std::iota(order.begin(), order.end(), std::uint16_t{ 0 });
+        std::ranges::sort(order, [row](std::uint16_t x, std::uint16_t y) {
+            return row[x] < row[y] || (!(row[y] < row[x]) && x < y);
+        });
+        for (std::size_t k = 0; k < clusterCount; k++) {
+            m_neighbourIndices[(i * clusterCount) + k] = order[k];
+            m_neighbourDistances[(i * clusterCount) + k] = row[order[k]];
+        }
+    }
 }
 
 bool WsMeans::reassignPoints() {
     bool colourMoved = false;
+    const auto clusterCount = m_clusters.size();
+    const auto* clusters = m_clusters.data();
     for (std::size_t i = 0; i < m_points.size(); i++) {
         const auto& point = m_points[i];
-        const auto previous = m_clusterIndices[i];
-        const auto previousDistance = point.deltaE(m_clusters[previous]);
+        const std::size_t previous = m_clusterIndices[i];
+        const auto previousDistance = point.deltaE(clusters[previous]);
         auto minimumDistance = previousDistance;
         auto nearest = previous;
 
-        for (std::size_t j = 0; j < m_clusters.size(); j++) {
-            if (clusterDistance(previous, j) >= 4 * previousDistance)
-                continue;
+        const auto* neighbourDistances = &m_neighbourDistances[previous * clusterCount];
+        const auto* neighbourIndices = &m_neighbourIndices[previous * clusterCount];
+        const auto cutOff = 4 * previousDistance;
+        for (std::size_t k = 0; k < clusterCount; k++) {
+            if (neighbourDistances[k] >= cutOff)
+                break;
 
-            const auto distance = point.deltaE(m_clusters[j]);
-            if (distance < minimumDistance) {
+            const std::size_t j = neighbourIndices[k];
+            const auto distance = point.deltaE(clusters[j]);
+            if (distance < minimumDistance || (!(minimumDistance < distance) && nearest != previous && j < nearest)) {
                 minimumDistance = distance;
                 nearest = j;
             }
@@ -145,7 +166,7 @@ bool WsMeans::reassignPoints() {
         const auto distanceChange = std::abs(std::sqrt(minimumDistance) - std::sqrt(previousDistance));
         if (distanceChange > k_minDeltaE) {
             colourMoved = true;
-            m_clusterIndices[i] = nearest;
+            m_clusterIndices[i] = static_cast<std::uint8_t>(nearest);
         }
     }
     return colourMoved;
