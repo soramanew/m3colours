@@ -39,6 +39,7 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 add_library(m3colours
+    src/blend/blend.cpp
     src/contrast/contrast.cpp
     src/hct/cam16.cpp
     src/hct/hct.cpp

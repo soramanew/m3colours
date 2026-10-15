@@ -77,6 +77,14 @@ constexpr double sanitiseDegrees(double degrees) {
     return degrees < 0.0 ? degrees + 360.0 : degrees;
 }
 
+constexpr double differenceDegrees(double a, double b) {
+    return 180.0 - std::abs(std::abs(a - b) - 180.0);
+}
+
+constexpr double rotationDirection(double from, double to) {
+    return sanitiseDegrees(to - from) <= 180.0 ? 1.0 : -1.0;
+}
+
 constexpr double lstarFromY(double y) {
     const auto yNormalized = y / 100.0;
     if (yNormalized <= 216.0 / 24389.0)
