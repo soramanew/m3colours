@@ -5,6 +5,10 @@ add_executable(m3colours_tests
     blend/blend_test.cpp
     contrast/contrast_test.cpp
     dislike/dislike_test.cpp
+    dynamiccolour/colour_spec_test.cpp
+    dynamiccolour/dynamic_colour_test.cpp
+    dynamiccolour/dynamic_scheme_test.cpp
+    dynamiccolour/fixed_dynamic_colour_test.cpp
     hct/hct_round_trip_test.cpp
     hct/hct_test.cpp
     palettes/palettes_test.cpp
