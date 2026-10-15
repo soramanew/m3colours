@@ -7,6 +7,7 @@ add_executable(m3colours_tests
     dislike/dislike_test.cpp
     hct/hct_round_trip_test.cpp
     hct/hct_test.cpp
+    palettes/palettes_test.cpp
     quantise/celebi_test.cpp
     quantise/wsmeans_test.cpp
     quantise/wu_test.cpp
