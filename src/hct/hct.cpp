@@ -1,9 +1,9 @@
 #include "m3colours/hct.hpp"
 
-namespace m3colours::hct {
+namespace m3colours {
 
 Hct::Hct(double hue, double chroma, double tone)
-    : Hct(solveToArgb(hue, chroma, tone)) {}
+    : Hct(hct::solveToArgb(hue, chroma, tone)) {}
 
 Hct::Hct(Argb argb)
     : m_argb(argb) {
@@ -11,31 +11,31 @@ Hct::Hct(Argb argb)
 }
 
 void Hct::setHue(double hue) {
-    setArgb(solveToArgb(hue, m_chroma, m_tone));
+    setArgb(hct::solveToArgb(hue, m_chroma, m_tone));
 }
 
 void Hct::setChroma(double chroma) {
-    setArgb(solveToArgb(m_hue, chroma, m_tone));
+    setArgb(hct::solveToArgb(m_hue, chroma, m_tone));
 }
 
 void Hct::setTone(double tone) {
-    setArgb(solveToArgb(m_hue, m_chroma, tone));
+    setArgb(hct::solveToArgb(m_hue, m_chroma, tone));
 }
 
-Hct Hct::inViewingConditions(const ViewingConditions& vc) const {
-    const auto jch = internal::jchFromXyz(internal::xyzFromArgb(m_argb), k_defaultViewingConditions);
-    const auto viewedInVc = internal::xyzFromJch(jch, vc);
-    const auto recastInVc = internal::jchFromXyz(viewedInVc, k_defaultViewingConditions);
+Hct Hct::inViewingConditions(const hct::ViewingConditions& vc) const {
+    const auto jch = hct::internal::jchFromXyz(hct::internal::xyzFromArgb(m_argb), hct::k_defaultViewingConditions);
+    const auto viewedInVc = hct::internal::xyzFromJch(jch, vc);
+    const auto recastInVc = hct::internal::jchFromXyz(viewedInVc, hct::k_defaultViewingConditions);
     return { recastInVc.hue, recastInVc.chroma, lstarFromY(viewedInVc.b) };
 }
 
 void Hct::setArgb(Argb argb) {
-    const auto xyz = internal::xyzFromArgb(argb);
-    const auto [j, chroma, hue] = internal::jchFromXyz(xyz, k_defaultViewingConditions);
+    const auto xyz = hct::internal::xyzFromArgb(argb);
+    const auto [j, chroma, hue] = hct::internal::jchFromXyz(xyz, hct::k_defaultViewingConditions);
     m_argb = argb;
     m_hue = hue;
     m_chroma = chroma;
     m_tone = lstarFromY(xyz.b);
 }
 
-} // namespace m3colours::hct
+} // namespace m3colours

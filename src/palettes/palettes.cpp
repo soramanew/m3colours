@@ -22,7 +22,7 @@ Argb averageArgb(Argb a, Argb b) {
 }
 
 // The key colour is the first tone, searching outwards from T50, that can reach the requested chroma.
-hct::Hct createKeyColour(double hue, double requestedChroma) {
+Hct createKeyColour(double hue, double requestedChroma) {
     constexpr auto k_pivotTone = 50;
     constexpr auto k_toneStepSize = 1;
     constexpr auto k_epsilon = 0.01;
@@ -69,10 +69,10 @@ bool isTone99(double tone) {
 } // namespace
 
 TonalPalette TonalPalette::fromArgb(Argb argb) {
-    return fromHct(hct::Hct{ argb });
+    return fromHct(Hct{ argb });
 }
 
-TonalPalette TonalPalette::fromHct(const hct::Hct& hct) {
+TonalPalette TonalPalette::fromHct(const Hct& hct) {
     return { hct.hue(), hct.chroma(), hct };
 }
 
@@ -80,7 +80,7 @@ TonalPalette TonalPalette::fromHueAndChroma(double hue, double chroma) {
     return { hue, chroma, createKeyColour(hue, chroma) };
 }
 
-TonalPalette::TonalPalette(double hue, double chroma, hct::Hct keyColour)
+TonalPalette::TonalPalette(double hue, double chroma, Hct keyColour)
     : m_hue(hue)
     , m_chroma(chroma)
     , m_keyColour(keyColour) {}
@@ -89,15 +89,15 @@ Argb TonalPalette::tone(double tone) const {
     if (const auto it = m_cache.find(tone); it != m_cache.end())
         return it->second;
 
-    const auto argb = isTone99(tone) && hct::Hct::isYellow(m_hue) // format hack
+    const auto argb = isTone99(tone) && Hct::isYellow(m_hue) // format hack
                           ? averageArgb(this->tone(98.0), this->tone(100.0))
                           : hct::solveToArgb(m_hue, m_chroma, tone);
     m_cache.emplace(tone, argb);
     return argb;
 }
 
-hct::Hct TonalPalette::getHct(double tone) const {
-    return hct::Hct{ this->tone(tone) };
+Hct TonalPalette::getHct(double tone) const {
+    return Hct{ this->tone(tone) };
 }
 
 CorePalette CorePalette::of(Argb argb) {

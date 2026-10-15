@@ -65,6 +65,10 @@ struct Cam16 {
 
 Argb solveToArgb(double hueDegrees, double chroma, double lstar);
 
+} // namespace m3colours::hct
+
+namespace m3colours {
+
 class Hct {
 public:
     Hct(double hue, double chroma, double tone);
@@ -81,7 +85,7 @@ public:
     void setChroma(double chroma);
     void setTone(double tone);
 
-    [[nodiscard]] Hct inViewingConditions(const ViewingConditions& vc) const;
+    [[nodiscard]] Hct inViewingConditions(const hct::ViewingConditions& vc) const;
 
     // clang-format off
     [[nodiscard]] static constexpr bool isBlue(double hue) { return hue >= 250.0 && hue < 270.0; }
@@ -98,4 +102,4 @@ private:
     double m_tone;
 };
 
-} // namespace m3colours::hct
+} // namespace m3colours

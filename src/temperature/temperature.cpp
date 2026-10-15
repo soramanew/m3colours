@@ -21,7 +21,7 @@ std::size_t hueIndex(double hue) {
 
 } // namespace
 
-TemperatureCache::TemperatureCache(const hct::Hct& input)
+TemperatureCache::TemperatureCache(const Hct& input)
     : m_input(input)
     , m_inputTemp(rawTemperature(input.toArgb()))
     , m_tempByHue()
@@ -55,15 +55,15 @@ TemperatureCache::TemperatureCache(const hct::Hct& input)
     }
 }
 
-hct::Hct TemperatureCache::warmest() const {
+Hct TemperatureCache::warmest() const {
     return m_warmestHue == k_hueCount ? m_input : hctAtHue(m_warmestHue);
 }
 
-hct::Hct TemperatureCache::coldest() const {
+Hct TemperatureCache::coldest() const {
     return hctAtHue(m_coldestHue);
 }
 
-std::vector<hct::Hct> TemperatureCache::analogous(int count, int divisions) const {
+std::vector<Hct> TemperatureCache::analogous(int count, int divisions) const {
     const auto startHue = hueIndex(m_input.hue());
     const auto startTemp = relativeTemperature(m_tempByHue[startHue]);
 
@@ -111,7 +111,7 @@ std::vector<hct::Hct> TemperatureCache::analogous(int count, int divisions) cons
         return static_cast<std::size_t>(((index % size) + size) % size);
     };
 
-    std::vector<hct::Hct> answers;
+    std::vector<Hct> answers;
     answers.reserve(static_cast<std::size_t>(count));
 
     const auto increaseHueCount = (count - 1) / 2;
@@ -127,7 +127,7 @@ std::vector<hct::Hct> TemperatureCache::analogous(int count, int divisions) cons
     return answers;
 }
 
-hct::Hct TemperatureCache::complement() const {
+Hct TemperatureCache::complement() const {
     const auto range = m_warmestTemp - m_coldestTemp;
     const auto inputHueIndex = hueIndex(m_input.hue());
     if (range <= 0.0)
@@ -160,7 +160,7 @@ hct::Hct TemperatureCache::complement() const {
     return hctAtHue(answer);
 }
 
-double TemperatureCache::relativeTemperature(const hct::Hct& hct) const {
+double TemperatureCache::relativeTemperature(const Hct& hct) const {
     return relativeTemperature(rawTemperature(hct.toArgb()));
 }
 

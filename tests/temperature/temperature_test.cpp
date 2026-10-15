@@ -15,15 +15,15 @@ constexpr Argb k_white{ 0xffffffff };
 constexpr Argb k_black{ 0xff000000 };
 
 double inputRelativeTemperature(Argb argb) {
-    return TemperatureCache(hct::Hct(argb)).inputRelativeTemperature();
+    return TemperatureCache(Hct(argb)).inputRelativeTemperature();
 }
 
 Argb complement(Argb argb) {
-    return TemperatureCache(hct::Hct(argb)).complement().toArgb();
+    return TemperatureCache(Hct(argb)).complement().toArgb();
 }
 
 void expectAnalogous(Argb argb, const std::vector<Argb>& expected) {
-    const auto analogous = TemperatureCache(hct::Hct(argb)).analogous();
+    const auto analogous = TemperatureCache(Hct(argb)).analogous();
     ASSERT_EQ(analogous.size(), expected.size());
     for (std::size_t i = 0; i < expected.size(); i++)
         EXPECT_EQ(analogous[i].toArgb(), expected[i]) << "index " << i;

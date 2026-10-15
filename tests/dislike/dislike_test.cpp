@@ -14,26 +14,26 @@ TEST(Dislike, LikesMonkSkinToneScaleColours) {
         Argb{ 0xffd7bd96 }, Argb{ 0xffa07e56 }, Argb{ 0xff825c43 }, Argb{ 0xff604134 }, Argb{ 0xff3a312a },
         Argb{ 0xff292420 } };
     for (const auto colour : colours) {
-        EXPECT_FALSE(isDisliked(hct::Hct{ colour }));
+        EXPECT_FALSE(isDisliked(Hct{ colour }));
     }
 }
 
 TEST(Dislike, DislikesBileColours) {
     for (const auto colour : k_bileColours) {
-        EXPECT_TRUE(isDisliked(hct::Hct{ colour }));
+        EXPECT_TRUE(isDisliked(Hct{ colour }));
     }
 }
 
 TEST(Dislike, MakesBileColoursLikable) {
     for (const auto colour : k_bileColours) {
-        const hct::Hct hct{ colour };
+        const Hct hct{ colour };
         EXPECT_TRUE(isDisliked(hct));
         EXPECT_FALSE(isDisliked(fixIfDisliked(hct)));
     }
 }
 
 TEST(Dislike, LikesTone67Colours) {
-    const hct::Hct colour{ 100.0, 50.0, 67.0 };
+    const Hct colour{ 100.0, 50.0, 67.0 };
     EXPECT_FALSE(isDisliked(colour));
     EXPECT_EQ(fixIfDisliked(colour).toArgb(), colour.toArgb());
 }

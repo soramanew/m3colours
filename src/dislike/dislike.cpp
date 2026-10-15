@@ -4,7 +4,7 @@
 
 namespace m3colours::dislike {
 
-bool isDisliked(const hct::Hct& hct) {
+bool isDisliked(const Hct& hct) {
     const auto hue = std::round(hct.hue());
     const auto huePasses = hue >= 90.0 && hue <= 111.0;
     const auto chromaPasses = std::round(hct.chroma()) > 16.0;
@@ -12,7 +12,7 @@ bool isDisliked(const hct::Hct& hct) {
     return huePasses && chromaPasses && tonePasses;
 }
 
-hct::Hct fixIfDisliked(const hct::Hct& hct) {
+Hct fixIfDisliked(const Hct& hct) {
     if (isDisliked(hct))
         return { hct.hue(), hct.chroma(), 70.0 };
     return hct;

@@ -11,24 +11,24 @@ namespace m3colours::palettes {
 class TonalPalette {
 public:
     static TonalPalette fromArgb(Argb argb);
-    static TonalPalette fromHct(const hct::Hct& hct);
+    static TonalPalette fromHct(const Hct& hct);
     static TonalPalette fromHueAndChroma(double hue, double chroma);
 
     // clang-format off
     [[nodiscard]] double hue() const { return m_hue; }
     [[nodiscard]] double chroma() const { return m_chroma; }
-    [[nodiscard]] const hct::Hct& keyColour() const { return m_keyColour; }
+    [[nodiscard]] const Hct& keyColour() const { return m_keyColour; }
     // clang-format on
 
     [[nodiscard]] Argb tone(double tone) const;
-    [[nodiscard]] hct::Hct getHct(double tone) const;
+    [[nodiscard]] Hct getHct(double tone) const;
 
 private:
-    TonalPalette(double hue, double chroma, hct::Hct keyColour);
+    TonalPalette(double hue, double chroma, Hct keyColour);
 
     double m_hue;
     double m_chroma;
-    hct::Hct m_keyColour;
+    Hct m_keyColour;
     mutable std::unordered_map<double, Argb> m_cache;
 };
 
