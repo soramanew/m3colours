@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.25)
 project(m3colours LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -52,6 +52,9 @@ add_library(m3colours::m3colours ALIAS m3colours)
 
 target_include_directories(m3colours PUBLIC include)
 target_compile_features(m3colours PUBLIC cxx_std_20)
+if(NOT PROJECT_IS_TOP_LEVEL)
+    set_target_properties(m3colours PROPERTIES SYSTEM ON)
+endif()
 
 if(PROJECT_IS_TOP_LEVEL)
     option(BUILD_TESTING "Build tests" OFF)
