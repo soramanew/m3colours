@@ -152,9 +152,8 @@ std::optional<m3colours::quantise::QuantiserResult> quantiseImage(const Args& ar
         const auto r = data[i * 4];
         const auto g = data[i * 4 + 1];
         const auto b = data[i * 4 + 2];
-        const auto a = data[i * 4 + 3];
 
-        pixels.emplace_back((a << 24) | (r << 16) | (g << 8) | b);
+        pixels.emplace_back(r, g, b);
     }
 
     auto res = m3colours::quantise::celebi(pixels, 128);
