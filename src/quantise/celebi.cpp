@@ -7,7 +7,34 @@ namespace m3colours::quantise {
 
 namespace internal {
 
-WeightedPixels uniquePixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
+namespace {
+
+constexpr std::size_t k_maxExactPixels = std::size_t{ 1 } << 20;
+
+constexpr unsigned k_binBits = 5;
+constexpr unsigned k_binShift = 8 - k_binBits;
+constexpr std::size_t k_binCount = std::size_t{ 1 } << (3 * k_binBits);
+constexpr std::uint8_t k_lowMask = (1u << k_binShift) - 1;
+
+struct Bin {
+    std::uint32_t count = 0;
+    std::uint32_t red = 0;
+    std::uint32_t green = 0;
+    std::uint32_t blue = 0;
+};
+
+std::size_t binIndex(Argb pixel) {
+    return (static_cast<std::size_t>(pixel.red() >> k_binShift) << (2 * k_binBits)) |
+           (static_cast<std::size_t>(pixel.green() >> k_binShift) << k_binBits) |
+           static_cast<std::size_t>(pixel.blue() >> k_binShift);
+}
+
+std::uint8_t binMean(std::size_t index, unsigned shift, std::uint32_t lowSum, std::uint32_t count) {
+    const auto base = ((index >> shift) & ((1u << k_binBits) - 1)) << k_binShift;
+    return static_cast<std::uint8_t>(base + (lowSum + count / 2) / count);
+}
+
+WeightedPixels exactPixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
     constexpr auto k_empty = std::numeric_limits<std::uint32_t>::max();
     constexpr auto k_fibonacci = 0x9E3779B97F4A7C15ull;
 
@@ -33,6 +60,40 @@ WeightedPixels uniquePixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
         }
     }
     return result;
+}
+
+WeightedPixels binnedPixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
+    std::vector<Bin> bins(k_binCount);
+    for (const auto pixel : pixels) {
+        if (opaqueOnly && !pixel.isOpaque())
+            continue;
+
+        auto& bin = bins[binIndex(pixel)];
+        bin.count++;
+        bin.red += static_cast<std::uint32_t>(pixel.red() & k_lowMask);
+        bin.green += static_cast<std::uint32_t>(pixel.green() & k_lowMask);
+        bin.blue += static_cast<std::uint32_t>(pixel.blue() & k_lowMask);
+    }
+
+    WeightedPixels result;
+    for (std::size_t i = 0; i < k_binCount; i++) {
+        const auto& bin = bins[i];
+        if (bin.count == 0)
+            continue;
+
+        result.pixels.emplace_back(binMean(i, 2 * k_binBits, bin.red, bin.count),
+            binMean(i, k_binBits, bin.green, bin.count), binMean(i, 0, bin.blue, bin.count));
+        result.counts.push_back(bin.count);
+    }
+    return result;
+}
+
+} // namespace
+
+WeightedPixels uniquePixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
+    if (pixels.size() > k_maxExactPixels)
+        return binnedPixels(pixels, opaqueOnly);
+    return exactPixels(pixels, opaqueOnly);
 }
 
 } // namespace internal
