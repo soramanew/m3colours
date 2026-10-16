@@ -1,20 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-
-if(NOT DEFINED VERSION)
-    execute_process(COMMAND git describe --tags --abbrev=0
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        OUTPUT_VARIABLE VERSION
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    if("${VERSION}" STREQUAL "")
-        set(VERSION "0.0.1")
-        message(AUTHOR_WARNING "VERSION is not set and failed to get from git. Defaulting to ${VERSION}.")
-    endif()
-endif()
-string(REGEX REPLACE "^v" "" VERSION "${VERSION}")
-
-project(m3colours VERSION ${VERSION} LANGUAGES CXX)
+project(m3colours LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
