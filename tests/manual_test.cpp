@@ -188,6 +188,13 @@ m3colours::scheme::DynamicScheme schemeForVariant(m3colours::Hct source, const s
     return m3colours::scheme::SchemeCmf(source, dark, 0);
 }
 
+void printScored(const std::vector<m3colours::Argb>& scored) {
+    for (std::size_t i = 0; i < scored.size(); ++i) {
+        const auto c = scored[i];
+        std::printf("%zu. %06x " SWATCH_FORMAT "\n", i + 1, c.value() & 0xffffffu, c.red(), c.green(), c.blue());
+    }
+}
+
 void printVariant(m3colours::Hct source, const std::string& variant, bool dark) {
     std::cout << "\n-- Scheme (" << variant << ") --\n\n";
     const auto scheme = schemeForVariant(source, variant, dark);
@@ -246,12 +253,10 @@ int main(int argc, char* argv[]) {
         const auto ranked = m3colours::score::score(res->colourToCount);
 
         if (args.printFlags == PrintFlags::Default || (args.printFlags & PrintFlags::Score) == PrintFlags::Score) {
-            std::cout << "\n-- Score --\n\n";
-            for (std::size_t i = 0; i < ranked.size(); ++i) {
-                const auto c = ranked[i];
-                std::printf(
-                    "%zu. %06x " SWATCH_FORMAT "\n", i + 1, c.value() & 0xffffffu, c.red(), c.green(), c.blue());
-            }
+            std::cout << "\n-- Score (default) --\n\n";
+            printScored(ranked);
+            std::cout << "\n-- Score (cutoff) --\n\n";
+            printScored(m3colours::score::scoreByCutoff(res->colourToCount));
         }
 
         printScheme(ranked[0], args);
