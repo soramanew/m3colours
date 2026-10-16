@@ -21,6 +21,7 @@ constexpr double k_cutoffExcitedProportion = 0.01;
 struct ScoredHct {
     Hct hct;
     double score;
+    int cutoff = 0;
 };
 
 constexpr std::size_t sanitiseDegreesInt(int degrees) {
@@ -96,36 +97,35 @@ int maxCutoff(const Hct& hct) {
     return std::max(std::min({ 20, byChroma, byTone }), -1);
 }
 
-struct Candidate {
-    const Hct* hct = nullptr;
-    int cutoff = -1;
-    double score = 0.0;
-
-    void offer(const Hct& candidate, int candidateCutoff, double candidateScore) {
-        if (candidateCutoff > cutoff || (candidateCutoff == cutoff && candidateScore > score)) {
-            hct = &candidate;
-            cutoff = candidateCutoff;
-            score = candidateScore;
-        }
+std::vector<ScoredHct> scoreColoursByCutoff(const HueAnalysis& analysis, bool filter) {
+    std::vector<ScoredHct> scoredHct;
+    for (const auto& hct : analysis.coloursHct) {
+        const auto cutoff = maxCutoff(hct);
+        if (cutoff < 0)
+            continue;
+        const auto proportion = excitedProportion(analysis, hct);
+        if (filter && !passesFilter(hct, proportion))
+            continue;
+        scoredHct.push_back({ .hct = hct, .score = scoreColour(hct, proportion), .cutoff = cutoff });
     }
-};
+    std::ranges::stable_sort(scoredHct, [](const ScoredHct& a, const ScoredHct& b) {
+        return a.cutoff != b.cutoff ? a.cutoff > b.cutoff : a.score > b.score;
+    });
+    return scoredHct;
+}
 
-} // namespace
-
-std::vector<Argb> score(const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options) {
-    const auto scoredHct = scoreColours(coloursToPopulation, options.filter);
-
+std::vector<Argb> chooseDistinctHues(const std::vector<ScoredHct>& scoredHct, const ScoreOptions& options) {
     const auto desired = static_cast<std::size_t>(std::max(options.desired, 0));
     std::vector<const Hct*> chosenColours;
     chosenColours.reserve(desired);
     for (int differenceDeg = 90; differenceDeg >= 15; differenceDeg--) {
         chosenColours.clear();
-        for (const auto& [hct, _] : scoredHct) {
+        for (const auto& scored : scoredHct) {
             const auto duplicateHue = std::ranges::any_of(chosenColours, [&](const Hct* chosen) {
-                return differenceDegrees(hct.hue(), chosen->hue()) < differenceDeg;
+                return differenceDegrees(scored.hct.hue(), chosen->hue()) < differenceDeg;
             });
             if (!duplicateHue)
-                chosenColours.push_back(&hct);
+                chosenColours.push_back(&scored.hct);
             if (chosenColours.size() >= desired)
                 break;
         }
@@ -142,24 +142,18 @@ std::vector<Argb> score(const std::map<Argb, std::uint32_t>& coloursToPopulation
     return colours;
 }
 
-Argb scoreSingle(const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options) {
+} // namespace
+
+std::vector<Argb> score(const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options) {
+    return chooseDistinctHues(scoreColours(coloursToPopulation, options.filter), options);
+}
+
+std::vector<Argb> scoreByCutoff(const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options) {
     const auto analysis = analyseHues(coloursToPopulation);
-
-    Candidate filtered;
-    Candidate unfiltered;
-    for (const auto& hct : analysis.coloursHct) {
-        const auto cutoff = maxCutoff(hct);
-        if (cutoff < 0)
-            continue;
-        const auto proportion = excitedProportion(analysis, hct);
-        const auto colourScore = scoreColour(hct, proportion);
-        unfiltered.offer(hct, cutoff, colourScore);
-        if (options.filter && passesFilter(hct, proportion))
-            filtered.offer(hct, cutoff, colourScore);
-    }
-
-    const auto* primary = filtered.hct ? filtered.hct : unfiltered.hct;
-    return primary ? primary->toArgb() : options.fallbackColour;
+    auto scoredHct = scoreColoursByCutoff(analysis, options.filter);
+    if (scoredHct.empty() && options.filter)
+        scoredHct = scoreColoursByCutoff(analysis, false);
+    return chooseDistinctHues(scoredHct, options);
 }
 
 } // namespace m3colours::score

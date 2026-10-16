@@ -15,6 +15,7 @@ struct ScoreOptions {
 };
 
 std::vector<Argb> score(const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options = {});
-Argb scoreSingle(const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options = {});
+std::vector<Argb> scoreByCutoff(
+    const std::map<Argb, std::uint32_t>& coloursToPopulation, const ScoreOptions& options = {});
 
 } // namespace m3colours::score
