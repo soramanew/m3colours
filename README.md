@@ -6,6 +6,11 @@ The [C++ implementation][cpp-tree] in Google's official repo is outdated and
 doesn't seem to be maintained, so I made this. This repo is made in reference
 to the [official TypeScript implementation][ts-tree].
 
+> [!NOTE]
+> This implementation is not 1:1 with the official implementation. It uses some
+> optimisations that change the results slightly, but also improve quantisation
+> speed immensely (up to 13x or more, depending on the size of the image).
+
 ## Installation
 
 This repo should be fetched using CMake's `FetchContent`. e.g.
