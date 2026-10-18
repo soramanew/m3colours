@@ -54,6 +54,7 @@ target_include_directories(m3colours PUBLIC include)
 target_compile_features(m3colours PUBLIC cxx_std_20)
 if(NOT PROJECT_IS_TOP_LEVEL)
     set_target_properties(m3colours PROPERTIES SYSTEM ON)
+    target_compile_options(m3colours PRIVATE -w)
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
