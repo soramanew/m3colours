@@ -34,7 +34,7 @@ std::uint8_t binMean(std::size_t index, unsigned shift, std::uint32_t lowSum, st
     return static_cast<std::uint8_t>(base + (lowSum + count / 2) / count);
 }
 
-WeightedPixels exactPixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
+WeightedPixels exactPixels(std::span<const Argb> pixels, bool opaqueOnly) {
     constexpr auto k_empty = std::numeric_limits<std::uint32_t>::max();
     constexpr auto k_fibonacci = 0x9E3779B97F4A7C15ull;
 
@@ -62,7 +62,7 @@ WeightedPixels exactPixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
     return result;
 }
 
-WeightedPixels binnedPixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
+WeightedPixels binnedPixels(std::span<const Argb> pixels, bool opaqueOnly) {
     std::vector<Bin> bins(k_binCount);
     for (const auto pixel : pixels) {
         if (opaqueOnly && !pixel.isOpaque())
@@ -90,7 +90,7 @@ WeightedPixels binnedPixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
 
 } // namespace
 
-WeightedPixels uniquePixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
+WeightedPixels uniquePixels(std::span<const Argb> pixels, bool opaqueOnly) {
     if (pixels.size() > k_maxExactPixels)
         return binnedPixels(pixels, opaqueOnly);
     return exactPixels(pixels, opaqueOnly);
@@ -98,7 +98,7 @@ WeightedPixels uniquePixels(const std::vector<Argb>& pixels, bool opaqueOnly) {
 
 } // namespace internal
 
-QuantiserResult celebi(const std::vector<Argb>& pixels, uint16_t maxColours, bool filterTransparent) {
+QuantiserResult celebi(std::span<const Argb> pixels, uint16_t maxColours, bool filterTransparent) {
     if (maxColours == 0 || pixels.empty())
         return {};
 

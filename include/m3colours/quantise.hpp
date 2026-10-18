@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <map>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -39,17 +40,17 @@ struct WeightedPixels {
 
 namespace internal {
 
-WeightedPixels uniquePixels(const std::vector<Argb>& pixels, bool opaqueOnly);
+WeightedPixels uniquePixels(std::span<const Argb> pixels, bool opaqueOnly);
 std::vector<Argb> wu(const WeightedPixels& pixels, uint16_t maxColours);
 QuantiserResult wsMeans(const WeightedPixels& pixels, const std::vector<Argb>& startingClusters, uint16_t maxColours);
 
 } // namespace internal
 
-std::vector<Argb> wu(const std::vector<Argb>& pixels, uint16_t maxColours);
+std::vector<Argb> wu(std::span<const Argb> pixels, uint16_t maxColours);
 
 QuantiserResult wsMeans(
-    const std::vector<Argb>& inputPixels, const std::vector<Argb>& startingClusters, uint16_t maxColours);
+    std::span<const Argb> inputPixels, const std::vector<Argb>& startingClusters, uint16_t maxColours);
 
-QuantiserResult celebi(const std::vector<Argb>& pixels, uint16_t maxColours, bool filterTransparent = true);
+QuantiserResult celebi(std::span<const Argb> pixels, uint16_t maxColours, bool filterTransparent = true);
 
 } // namespace m3colours::quantise

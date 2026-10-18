@@ -219,7 +219,7 @@ QuantiserResult WsMeans::buildResult() const {
 } // namespace
 
 QuantiserResult wsMeans(
-    const std::vector<Argb>& inputPixels, const std::vector<Argb>& startingClusters, uint16_t maxColours) {
+    std::span<const Argb> inputPixels, const std::vector<Argb>& startingClusters, uint16_t maxColours) {
     return internal::wsMeans(internal::uniquePixels(inputPixels, false), startingClusters, maxColours);
 }
 
