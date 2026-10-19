@@ -7,7 +7,7 @@ namespace m3colours::quantise {
 
 namespace {
 
-constexpr std::size_t k_maxExactPixels = std::size_t{ 1 } << 20;
+constexpr std::size_t k_maxExactPixels = std::size_t{ 1 } << 20u;
 
 constexpr unsigned k_binBits = 5;
 constexpr unsigned k_binShift = 8 - k_binBits;
