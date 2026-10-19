@@ -31,25 +31,14 @@ constexpr std::array k_allVariants = {
     "cmf",
 };
 
-enum class PrintFlags : std::uint8_t {
-    Default = 0,
-    All = 1 << 0,
-    Quantised = 1 << 1,
-    Score = 1 << 2,
-    SchemeSingle = 1 << 3,
-    SchemeAll = 1 << 4,
+struct PrintFlags {
+    static constexpr unsigned k_default = 0;
+    static constexpr unsigned k_all = 1u << 0u;
+    static constexpr unsigned k_quantised = 1u << 1u;
+    static constexpr unsigned k_score = 1u << 2u;
+    static constexpr unsigned k_schemeSingle = 1u << 3u;
+    static constexpr unsigned k_schemeAll = 1u << 4u;
 };
-
-PrintFlags& operator|=(PrintFlags& lhs, PrintFlags rhs) {
-    using T = std::underlying_type_t<PrintFlags>;
-    lhs = static_cast<PrintFlags>(static_cast<T>(lhs) | static_cast<T>(rhs));
-    return lhs;
-}
-
-PrintFlags operator&(PrintFlags lhs, PrintFlags rhs) {
-    using T = std::underlying_type_t<PrintFlags>;
-    return static_cast<PrintFlags>(static_cast<T>(lhs) & static_cast<T>(rhs));
-}
 
 enum class UsageCause : std::uint8_t {
     None,
@@ -64,23 +53,23 @@ struct Args {
     std::optional<m3colours::Argb> sourceColour;
     std::string variant = "cmf";
     bool dark = false;
-    PrintFlags printFlags = PrintFlags::Default;
+    unsigned printFlags = PrintFlags::k_default;
 };
 
-PrintFlags parsePrintFlags(const std::string& str) {
-    PrintFlags flags = PrintFlags::Default;
+unsigned parsePrintFlags(const std::string& str) {
+    unsigned flags = PrintFlags::k_default;
     for (const auto& c : str | std::views::split(',')) {
         const auto chunk = std::string_view(c.begin(), c.end());
         if (chunk == "all")
-            flags |= PrintFlags::All;
+            flags |= PrintFlags::k_all;
         else if (chunk == "quantised")
-            flags |= PrintFlags::Quantised;
+            flags |= PrintFlags::k_quantised;
         else if (chunk == "score")
-            flags |= PrintFlags::Score;
+            flags |= PrintFlags::k_score;
         else if (chunk == "scheme-single")
-            flags |= PrintFlags::SchemeSingle;
+            flags |= PrintFlags::k_schemeSingle;
         else if (chunk == "scheme" || chunk == "scheme-all")
-            flags |= PrintFlags::SchemeAll;
+            flags |= PrintFlags::k_schemeAll;
     }
 
     return flags;
@@ -134,10 +123,10 @@ Args parseArgs(int argc, char* argv[]) {
     return args;
 }
 
-std::optional<m3colours::quantise::QuantiserResult> quantiseImage(const Args& args) {
+std::optional<m3colours::quantise::QuantiserResult> quantiseImage(const std::string& imgPath) {
     int w;
     int h;
-    auto* const data = stbi_load(args.imgPath->c_str(), &w, &h, nullptr, 4);
+    auto* const data = stbi_load(imgPath.c_str(), &w, &h, nullptr, 4);
     const auto width = static_cast<std::size_t>(w);
     const auto height = static_cast<std::size_t>(h);
 
@@ -205,13 +194,12 @@ void printVariant(m3colours::Hct source, const std::string& variant, bool dark) 
 }
 
 void printScheme(m3colours::Argb source, const Args& args) {
-    m3colours::Hct hct{ source };
+    const m3colours::Hct hct{ source };
 
-    if ((args.printFlags & PrintFlags::SchemeAll) == PrintFlags::SchemeAll) {
+    if ((args.printFlags & PrintFlags::k_schemeAll) != 0) {
         for (const auto* variant : k_allVariants)
             printVariant(hct, variant, args.dark);
-    } else if (args.printFlags == PrintFlags::Default ||
-               (args.printFlags & PrintFlags::SchemeSingle) == PrintFlags::SchemeSingle) {
+    } else if (args.printFlags == PrintFlags::k_default || (args.printFlags & PrintFlags::k_schemeSingle) != 0) {
         printVariant(hct, args.variant, args.dark);
     }
 }
@@ -236,11 +224,11 @@ int main(int argc, char* argv[]) {
         std::cout << "\n=== From image ===\n\n";
         std::cout << "Image: " << *args.imgPath << '\n';
 
-        const auto res = quantiseImage(args);
+        const auto res = quantiseImage(*args.imgPath);
         if (!res)
             return 1;
 
-        if ((args.printFlags & PrintFlags::Quantised) == PrintFlags::Quantised) {
+        if ((args.printFlags & PrintFlags::k_quantised) != 0) {
             std::cout << "\n-- Quantised --\n\n";
             std::vector<std::pair<m3colours::Argb, std::uint32_t>> entries(
                 res->colourToCount.begin(), res->colourToCount.end());
@@ -251,7 +239,7 @@ int main(int argc, char* argv[]) {
 
         const auto ranked = m3colours::score::score(res->colourToCount);
 
-        if (args.printFlags == PrintFlags::Default || (args.printFlags & PrintFlags::Score) == PrintFlags::Score) {
+        if (args.printFlags == PrintFlags::k_default || (args.printFlags & PrintFlags::k_score) != 0) {
             std::cout << "\n-- Score (default) --\n\n";
             printScored(ranked);
             std::cout << "\n-- Score (cutoff) --\n\n";

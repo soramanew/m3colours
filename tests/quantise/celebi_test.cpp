@@ -72,8 +72,13 @@ TEST(Celebi, OneRedOneGreenOneBlue) {
 }
 
 TEST(Celebi, TwoRedThreeGreen) {
-    std::vector<Argb> pixels{ Argb{ 0xffff0000 }, Argb{ 0xffff0000 }, Argb{ 0xff00ff00 }, Argb{ 0xff00ff00 },
-        Argb{ 0xff00ff00 } };
+    std::vector<Argb> pixels{
+        Argb{ 0xffff0000 },
+        Argb{ 0xffff0000 },
+        Argb{ 0xff00ff00 },
+        Argb{ 0xff00ff00 },
+        Argb{ 0xff00ff00 },
+    };
     auto result = celebi(pixels, 256);
     EXPECT_EQ(result.colourToCount.size(), 2u);
     EXPECT_EQ(result.colourToCount[Argb{ 0xffff0000 }], 2u);
@@ -81,19 +86,19 @@ TEST(Celebi, TwoRedThreeGreen) {
 }
 
 TEST(Celebi, NoColours) {
-    auto result = celebi(repeated(0xffffffff, 1), 0);
+    const auto result = celebi(repeated(0xffffffff, 1), 0);
     EXPECT_TRUE(result.colourToCount.empty());
     EXPECT_TRUE(result.inputToCluster.empty());
 }
 
 TEST(Celebi, SingleTransparent) {
-    auto result = celebi(repeated(0x20f93013, 1), 1);
+    const auto result = celebi(repeated(0x20f93013, 1), 1);
     EXPECT_TRUE(result.colourToCount.empty());
     EXPECT_TRUE(result.inputToCluster.empty());
 }
 
 TEST(Celebi, TooManyColours) {
-    auto result = celebi(std::vector<Argb>{}, 32767);
+    const auto result = celebi(std::vector<Argb>{}, 32767);
     EXPECT_TRUE(result.colourToCount.empty());
     EXPECT_TRUE(result.inputToCluster.empty());
 }
