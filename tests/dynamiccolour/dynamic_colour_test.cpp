@@ -319,7 +319,7 @@ TEST(DynamicColour, GeneratesColoursRespectingContrast) {
 std::map<std::string, double> resolveTones(const DynamicScheme& scheme) {
     std::map<std::string, double> tones;
     for (const auto* colour : colours())
-        tones[colour->name()] = lstarFromArgb(colour->getArgb(scheme));
+        tones[std::string{ colour->name() }] = lstarFromArgb(colour->getArgb(scheme));
     return tones;
 }
 

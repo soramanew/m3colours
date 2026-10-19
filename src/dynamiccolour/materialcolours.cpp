@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 
 #include "m3colours/dislike.hpp"
 #include "m3colours/dynamiccolour.hpp"
@@ -143,6 +144,71 @@ const DynamicColour* fixedBackground2026(double fixedTone, const DynamicColour& 
     return fixedTone > 57.0 ? &fixedDim : &fixed;
 }
 
+enum Role : std::uint8_t {
+    PrimaryPaletteKeyColour,
+    SecondaryPaletteKeyColour,
+    TertiaryPaletteKeyColour,
+    NeutralPaletteKeyColour,
+    NeutralVariantPaletteKeyColour,
+    ErrorPaletteKeyColour,
+    Background,
+    OnBackground,
+    Surface,
+    SurfaceDim,
+    SurfaceBright,
+    SurfaceContainerLowest,
+    SurfaceContainerLow,
+    SurfaceContainer,
+    SurfaceContainerHigh,
+    SurfaceContainerHighest,
+    OnSurface,
+    SurfaceVariant,
+    OnSurfaceVariant,
+    InverseSurface,
+    InverseOnSurface,
+    Outline,
+    OutlineVariant,
+    Shadow,
+    Scrim,
+    SurfaceTint,
+    Primary,
+    PrimaryDim,
+    OnPrimary,
+    PrimaryContainer,
+    OnPrimaryContainer,
+    InversePrimary,
+    PrimaryFixed,
+    PrimaryFixedDim,
+    OnPrimaryFixed,
+    OnPrimaryFixedVariant,
+    Secondary,
+    SecondaryDim,
+    OnSecondary,
+    SecondaryContainer,
+    OnSecondaryContainer,
+    SecondaryFixed,
+    SecondaryFixedDim,
+    OnSecondaryFixed,
+    OnSecondaryFixedVariant,
+    Tertiary,
+    TertiaryDim,
+    OnTertiary,
+    TertiaryContainer,
+    OnTertiaryContainer,
+    TertiaryFixed,
+    TertiaryFixedDim,
+    OnTertiaryFixed,
+    OnTertiaryFixedVariant,
+    Error,
+    ErrorDim,
+    OnError,
+    ErrorContainer,
+    OnErrorContainer,
+    Count,
+};
+
+static_assert(Role::Count <= k_toneCacheSize);
+
 } // namespace
 
 const DynamicColour& highestSurface(const DynamicScheme& scheme) {
@@ -153,7 +219,7 @@ const DynamicColour& highestSurface(const DynamicScheme& scheme) {
 // Main Palettes                                              //
 ////////////////////////////////////////////////////////////////
 
-const DynamicColour k_primaryPaletteKeyColour{ {
+constexpr DynamicColour k_primaryPaletteKeyColour{ Role::PrimaryPaletteKeyColour, {
     .name = "primary_palette_key_color",
     .base = {
         .palette = primaryPalette,
@@ -161,7 +227,7 @@ const DynamicColour k_primaryPaletteKeyColour{ {
     },
 } };
 
-const DynamicColour k_secondaryPaletteKeyColour{ {
+constexpr DynamicColour k_secondaryPaletteKeyColour{ Role::SecondaryPaletteKeyColour, {
     .name = "secondary_palette_key_color",
     .base = {
         .palette = secondaryPalette,
@@ -169,7 +235,7 @@ const DynamicColour k_secondaryPaletteKeyColour{ {
     },
 } };
 
-const DynamicColour k_tertiaryPaletteKeyColour{ {
+constexpr DynamicColour k_tertiaryPaletteKeyColour{ Role::TertiaryPaletteKeyColour, {
     .name = "tertiary_palette_key_color",
     .base = {
         .palette = tertiaryPalette,
@@ -177,7 +243,7 @@ const DynamicColour k_tertiaryPaletteKeyColour{ {
     },
 } };
 
-const DynamicColour k_neutralPaletteKeyColour{ {
+constexpr DynamicColour k_neutralPaletteKeyColour{ Role::NeutralPaletteKeyColour, {
     .name = "neutral_palette_key_color",
     .base = {
         .palette = neutralPalette,
@@ -185,7 +251,7 @@ const DynamicColour k_neutralPaletteKeyColour{ {
     },
 } };
 
-const DynamicColour k_neutralVariantPaletteKeyColour{ {
+constexpr DynamicColour k_neutralVariantPaletteKeyColour{ Role::NeutralVariantPaletteKeyColour, {
     .name = "neutral_variant_palette_key_color",
     .base = {
         .palette = neutralVariantPalette,
@@ -193,7 +259,7 @@ const DynamicColour k_neutralVariantPaletteKeyColour{ {
     },
 } };
 
-const DynamicColour k_errorPaletteKeyColour{ {
+constexpr DynamicColour k_errorPaletteKeyColour{ Role::ErrorPaletteKeyColour, {
     .name = "error_palette_key_color",
     .base = {
         .palette = errorPalette,
@@ -205,7 +271,7 @@ const DynamicColour k_errorPaletteKeyColour{ {
 // Surfaces [S]                                               //
 ////////////////////////////////////////////////////////////////
 
-const DynamicColour k_background{ {
+constexpr DynamicColour k_background{ Role::Background, {
     .name = "background",
     .isBackground = true,
     .base = {
@@ -218,7 +284,7 @@ const DynamicColour k_background{ {
     },
 } };
 
-const DynamicColour k_onBackground{ {
+constexpr DynamicColour k_onBackground{ Role::OnBackground, {
     .name = "on_background",
     .base = {
         .palette = neutralPalette,
@@ -231,7 +297,7 @@ const DynamicColour k_onBackground{ {
                 return &background();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 3.0, 4.5, 7.0 };
             },
     },
@@ -250,13 +316,13 @@ const DynamicColour k_onBackground{ {
                 return onSurface().background(s);
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return onSurface().contrastCurve(s);
             },
     },
 } };
 
-const DynamicColour k_surface{ {
+constexpr DynamicColour k_surface{ Role::Surface, {
     .name = "surface",
     .isBackground = true,
     .base = {
@@ -277,7 +343,7 @@ const DynamicColour k_surface{ {
     },
 } };
 
-const DynamicColour k_surfaceDim{ {
+constexpr DynamicColour k_surfaceDim{ Role::SurfaceDim, {
     .name = "surface_dim",
     .isBackground = true,
     .base = {
@@ -300,7 +366,7 @@ const DynamicColour k_surfaceDim{ {
     },
 } };
 
-const DynamicColour k_surfaceBright{ {
+constexpr DynamicColour k_surfaceBright{ Role::SurfaceBright, {
     .name = "surface_bright",
     .isBackground = true,
     .base = {
@@ -323,7 +389,7 @@ const DynamicColour k_surfaceBright{ {
     },
 } };
 
-const DynamicColour k_surfaceContainerLowest{ {
+constexpr DynamicColour k_surfaceContainerLowest{ Role::SurfaceContainerLowest, {
     .name = "surface_container_lowest",
     .isBackground = true,
     .base = {
@@ -342,7 +408,7 @@ const DynamicColour k_surfaceContainerLowest{ {
     },
 } };
 
-const DynamicColour k_surfaceContainerLow{ {
+constexpr DynamicColour k_surfaceContainerLow{ Role::SurfaceContainerLow, {
     .name = "surface_container_low",
     .isBackground = true,
     .base = {
@@ -370,7 +436,7 @@ const DynamicColour k_surfaceContainerLow{ {
     },
 } };
 
-const DynamicColour k_surfaceContainer{ {
+constexpr DynamicColour k_surfaceContainer{ Role::SurfaceContainer, {
     .name = "surface_container",
     .isBackground = true,
     .base = {
@@ -398,7 +464,7 @@ const DynamicColour k_surfaceContainer{ {
     },
 } };
 
-const DynamicColour k_surfaceContainerHigh{ {
+constexpr DynamicColour k_surfaceContainerHigh{ Role::SurfaceContainerHigh, {
     .name = "surface_container_high",
     .isBackground = true,
     .base = {
@@ -426,7 +492,7 @@ const DynamicColour k_surfaceContainerHigh{ {
     },
 } };
 
-const DynamicColour k_surfaceContainerHighest{ {
+constexpr DynamicColour k_surfaceContainerHighest{ Role::SurfaceContainerHighest, {
     .name = "surface_container_highest",
     .isBackground = true,
     .base = {
@@ -450,7 +516,7 @@ const DynamicColour k_surfaceContainerHighest{ {
     },
 } };
 
-const DynamicColour k_onSurface{ {
+constexpr DynamicColour k_onSurface{ Role::OnSurface, {
     .name = "on_surface",
     .base = {
         .palette = neutralPalette,
@@ -463,7 +529,7 @@ const DynamicColour k_onSurface{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 4.5, 7.0, 11.0, 21.0 };
             },
     },
@@ -478,7 +544,7 @@ const DynamicColour k_onSurface{ {
         .chromaMultiplier = neutralForegroundChromaMultiplier2025,
         .background = highestSurfaceOrContainerHigh,
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return s.isDark() && isPhone(s) ? k_curve11 : k_curve9;
             },
     },
@@ -493,13 +559,13 @@ const DynamicColour k_onSurface{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return s.isDark() ? k_curve11 : k_curve9;
             },
     },
 } };
 
-const DynamicColour k_surfaceVariant{ {
+constexpr DynamicColour k_surfaceVariant{ Role::SurfaceVariant, {
     .name = "surface_variant",
     .isBackground = true,
     .base = {
@@ -513,7 +579,7 @@ const DynamicColour k_surfaceVariant{ {
     },
 } };
 
-const DynamicColour k_onSurfaceVariant{ {
+constexpr DynamicColour k_onSurfaceVariant{ Role::OnSurfaceVariant, {
     .name = "on_surface_variant",
     .base = {
         .palette = neutralVariantPalette,
@@ -526,7 +592,7 @@ const DynamicColour k_onSurfaceVariant{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 11.0 };
             },
     },
@@ -536,7 +602,7 @@ const DynamicColour k_onSurfaceVariant{ {
             .chromaMultiplier = neutralForegroundChromaMultiplier2025,
             .background = highestSurfaceOrContainerHigh,
             .contrastCurve =
-                [](const DynamicScheme& s) {
+                [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                     if (!isPhone(s))
                         return k_curve7;
                     return s.isDark() ? k_curve6 : k_curve4p5;
@@ -553,13 +619,13 @@ const DynamicColour k_onSurfaceVariant{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return s.isDark() ? k_curve6 : k_curve4p5;
             },
     },
 } };
 
-const DynamicColour k_inverseSurface{ {
+constexpr DynamicColour k_inverseSurface{ Role::InverseSurface, {
     .name = "inverse_surface",
     .isBackground = true,
     .base = {
@@ -577,7 +643,7 @@ const DynamicColour k_inverseSurface{ {
     },
 } };
 
-const DynamicColour k_inverseOnSurface{ {
+constexpr DynamicColour k_inverseOnSurface{ Role::InverseOnSurface, {
     .name = "inverse_on_surface",
     .base = {
         .palette = neutralPalette,
@@ -590,7 +656,7 @@ const DynamicColour k_inverseOnSurface{ {
                 return &inverseSurface();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 4.5, 7.0, 11.0, 21.0 };
             },
     },
@@ -601,13 +667,13 @@ const DynamicColour k_inverseOnSurface{ {
                 return &inverseSurface();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve7;
             },
     },
 } };
 
-const DynamicColour k_outline{ {
+constexpr DynamicColour k_outline{ Role::Outline, {
     .name = "outline",
     .base = {
         .palette = neutralVariantPalette,
@@ -620,7 +686,7 @@ const DynamicColour k_outline{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.5, 3.0, 4.5, 7.0 };
             },
     },
@@ -630,7 +696,7 @@ const DynamicColour k_outline{ {
             .chromaMultiplier = neutralForegroundChromaMultiplier2025,
             .background = highestSurfaceOrContainerHigh,
             .contrastCurve =
-                [](const DynamicScheme& s) {
+                [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                     return isPhone(s) ? k_curve3 : k_curve4p5;
                 },
         },
@@ -645,13 +711,13 @@ const DynamicColour k_outline{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve3;
             },
     },
 } };
 
-const DynamicColour k_outlineVariant{ {
+constexpr DynamicColour k_outlineVariant{ Role::OutlineVariant, {
     .name = "outline_variant",
     .base = {
         .palette = neutralVariantPalette,
@@ -664,7 +730,7 @@ const DynamicColour k_outlineVariant{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
     },
@@ -674,7 +740,7 @@ const DynamicColour k_outlineVariant{ {
             .chromaMultiplier = neutralForegroundChromaMultiplier2025,
             .background = highestSurfaceOrContainerHigh,
             .contrastCurve =
-                [](const DynamicScheme& s) {
+                [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                     return isPhone(s) ? k_curve1p5 : k_curve3;
                 },
         },
@@ -689,13 +755,13 @@ const DynamicColour k_outlineVariant{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve1p5;
             },
     },
 } };
 
-const DynamicColour k_shadow{ {
+constexpr DynamicColour k_shadow{ Role::Shadow, {
     .name = "shadow",
     .base = {
         .palette = neutralPalette,
@@ -703,7 +769,7 @@ const DynamicColour k_shadow{ {
     },
 } };
 
-const DynamicColour k_scrim{ {
+constexpr DynamicColour k_scrim{ Role::Scrim, {
     .name = "scrim",
     .base = {
         .palette = neutralPalette,
@@ -711,7 +777,7 @@ const DynamicColour k_scrim{ {
     },
 } };
 
-const DynamicColour k_surfaceTint{ {
+constexpr DynamicColour k_surfaceTint{ Role::SurfaceTint, {
     .name = "surface_tint",
     .isBackground = true,
     .base = {
@@ -728,7 +794,7 @@ const DynamicColour k_surfaceTint{ {
 // Primaries [P]                                              //
 ////////////////////////////////////////////////////////////////
 
-const DynamicColour k_primary{ {
+constexpr DynamicColour k_primary{ Role::Primary, {
     .name = "primary",
     .isBackground = true,
     .base = {
@@ -744,11 +810,11 @@ const DynamicColour k_primary{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 7.0 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ primaryContainer(), primary(), 10.0, TonePolarity::Nearer, false };
             },
     },
@@ -781,7 +847,7 @@ const DynamicColour k_primary{ {
             },
         .background = highestSurfaceOrContainerHigh,
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve4p5 : k_curve7;
             },
         .toneDeltaPair = [](const DynamicScheme& s) -> std::optional<ToneDeltaPair> {
@@ -804,7 +870,7 @@ const DynamicColour k_primary{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
         .toneDeltaPair = [](const DynamicScheme& s) -> std::optional<ToneDeltaPair> {
@@ -817,7 +883,7 @@ const DynamicColour k_primary{ {
 } };
 
 // NOLINTNEXTLINE(misc-static-initialization-cycle): lambdas run after initialisation
-const DynamicColour k_primaryDim{ {
+constexpr DynamicColour k_primaryDim{ Role::PrimaryDim, {
     .name = "primary_dim",
     .isBackground = true,
     .base = {
@@ -838,11 +904,11 @@ const DynamicColour k_primaryDim{ {
                 return &surfaceContainerHigh();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ primaryDim(), primary(), 5.0, TonePolarity::Darker, true,
                     DeltaConstraint::Farther };
             },
@@ -857,7 +923,7 @@ const DynamicColour k_primaryDim{ {
         },
 } };
 
-const DynamicColour k_onPrimary{ {
+constexpr DynamicColour k_onPrimary{ Role::OnPrimary, {
     .name = "on_primary",
     .base = {
         .palette = primaryPalette,
@@ -872,7 +938,7 @@ const DynamicColour k_onPrimary{ {
                 return &primary();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 4.5, 7.0, 11.0, 21.0 };
             },
     },
@@ -883,7 +949,7 @@ const DynamicColour k_onPrimary{ {
                 return isPhone(s) ? &primary() : &primaryDim();
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve6 : k_curve7;
             },
     },
@@ -894,13 +960,13 @@ const DynamicColour k_onPrimary{ {
                 return &primary();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve6;
             },
     },
 } };
 
-const DynamicColour k_primaryContainer{ {
+constexpr DynamicColour k_primaryContainer{ Role::PrimaryContainer, {
     .name = "primary_container",
     .isBackground = true,
     .base = {
@@ -918,11 +984,11 @@ const DynamicColour k_primaryContainer{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ primaryContainer(), primary(), 10.0, TonePolarity::Nearer, false };
             },
     },
@@ -973,7 +1039,7 @@ const DynamicColour k_primaryContainer{ {
     },
 } };
 
-const DynamicColour k_onPrimaryContainer{ {
+constexpr DynamicColour k_onPrimaryContainer{ Role::OnPrimaryContainer, {
     .name = "on_primary_container",
     .base = {
         .palette = primaryPalette,
@@ -990,7 +1056,7 @@ const DynamicColour k_onPrimaryContainer{ {
                 return &primaryContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 11.0 };
             },
     },
@@ -1001,7 +1067,7 @@ const DynamicColour k_onPrimaryContainer{ {
                 return &primaryContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve6 : k_curve7;
             },
     },
@@ -1012,13 +1078,13 @@ const DynamicColour k_onPrimaryContainer{ {
                 return &primaryContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve6;
             },
     },
 } };
 
-const DynamicColour k_inversePrimary{ {
+constexpr DynamicColour k_inversePrimary{ Role::InversePrimary, {
     .name = "inverse_primary",
     .base = {
         .palette = primaryPalette,
@@ -1031,7 +1097,7 @@ const DynamicColour k_inversePrimary{ {
                 return &inverseSurface();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 7.0 };
             },
     },
@@ -1046,7 +1112,7 @@ const DynamicColour k_inversePrimary{ {
                 return &inverseSurface();
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve6 : k_curve7;
             },
     },
@@ -1056,7 +1122,7 @@ const DynamicColour k_inversePrimary{ {
 // Primary Fixed [PF]                                         //
 ////////////////////////////////////////////////////////////////
 
-const DynamicColour k_primaryFixed{ {
+constexpr DynamicColour k_primaryFixed{ Role::PrimaryFixed, {
     .name = "primary_fixed",
     .isBackground = true,
     .base = {
@@ -1070,11 +1136,11 @@ const DynamicColour k_primaryFixed{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ primaryFixed(), primaryFixedDim(), 10.0, TonePolarity::Lighter, true };
             },
     },
@@ -1103,7 +1169,7 @@ const DynamicColour k_primaryFixed{ {
 } };
 
 // NOLINTNEXTLINE(misc-static-initialization-cycle): lambdas run after initialisation
-const DynamicColour k_primaryFixedDim{ {
+constexpr DynamicColour k_primaryFixedDim{ Role::PrimaryFixedDim, {
     .name = "primary_fixed_dim",
     .isBackground = true,
     .base = {
@@ -1117,11 +1183,11 @@ const DynamicColour k_primaryFixedDim{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ primaryFixed(), primaryFixedDim(), 10.0, TonePolarity::Lighter, true };
             },
     },
@@ -1132,7 +1198,7 @@ const DynamicColour k_primaryFixedDim{ {
                 return primaryFixed().getTone(s);
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ primaryFixedDim(), primaryFixed(), 5.0, TonePolarity::Darker, true,
                     DeltaConstraint::Exact };
             },
@@ -1149,14 +1215,14 @@ const DynamicColour k_primaryFixedDim{ {
             },
         .contrastCurve = containerCurve2026,
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ primaryFixedDim(), primaryFixed(), 5.0, TonePolarity::Darker, true,
                     DeltaConstraint::Exact };
             },
     },
 } };
 
-const DynamicColour k_onPrimaryFixed{ {
+constexpr DynamicColour k_onPrimaryFixed{ Role::OnPrimaryFixed, {
     .name = "on_primary_fixed",
     .base = {
         .palette = primaryPalette,
@@ -1173,7 +1239,7 @@ const DynamicColour k_onPrimaryFixed{ {
                 return &primaryFixed();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 4.5, 7.0, 11.0, 21.0 };
             },
     },
@@ -1184,7 +1250,7 @@ const DynamicColour k_onPrimaryFixed{ {
                 return &primaryFixedDim();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve7;
             },
     },
@@ -1195,13 +1261,13 @@ const DynamicColour k_onPrimaryFixed{ {
                 return fixedBackground2026(primaryFixed().getTone(s), primaryFixed(), primaryFixedDim());
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve7;
             },
     },
 } };
 
-const DynamicColour k_onPrimaryFixedVariant{ {
+constexpr DynamicColour k_onPrimaryFixedVariant{ Role::OnPrimaryFixedVariant, {
     .name = "on_primary_fixed_variant",
     .base = {
         .palette = primaryPalette,
@@ -1218,7 +1284,7 @@ const DynamicColour k_onPrimaryFixedVariant{ {
                 return &primaryFixed();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 11.0 };
             },
     },
@@ -1229,7 +1295,7 @@ const DynamicColour k_onPrimaryFixedVariant{ {
                 return &primaryFixedDim();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
     },
@@ -1240,7 +1306,7 @@ const DynamicColour k_onPrimaryFixedVariant{ {
                 return fixedBackground2026(primaryFixed().getTone(s), primaryFixed(), primaryFixedDim());
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
     },
@@ -1250,7 +1316,7 @@ const DynamicColour k_onPrimaryFixedVariant{ {
 // Secondaries [Q]                                            //
 ////////////////////////////////////////////////////////////////
 
-const DynamicColour k_secondary{ {
+constexpr DynamicColour k_secondary{ Role::Secondary, {
     .name = "secondary",
     .isBackground = true,
     .base = {
@@ -1264,11 +1330,11 @@ const DynamicColour k_secondary{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 7.0 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ secondaryContainer(), secondary(), 10.0, TonePolarity::Nearer, false };
             },
     },
@@ -1290,7 +1356,7 @@ const DynamicColour k_secondary{ {
             },
         .background = highestSurfaceOrContainerHigh,
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve4p5 : k_curve7;
             },
         .toneDeltaPair = [](const DynamicScheme& s) -> std::optional<ToneDeltaPair> {
@@ -1311,7 +1377,7 @@ const DynamicColour k_secondary{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
         .toneDeltaPair = [](const DynamicScheme& s) -> std::optional<ToneDeltaPair> {
@@ -1324,7 +1390,7 @@ const DynamicColour k_secondary{ {
 } };
 
 // NOLINTNEXTLINE(misc-static-initialization-cycle): lambdas run after initialisation
-const DynamicColour k_secondaryDim{ {
+constexpr DynamicColour k_secondaryDim{ Role::SecondaryDim, {
     .name = "secondary_dim",
     .isBackground = true,
     .base = {
@@ -1338,11 +1404,11 @@ const DynamicColour k_secondaryDim{ {
                 return &surfaceContainerHigh();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ secondaryDim(), secondary(), 5.0, TonePolarity::Darker, true,
                     DeltaConstraint::Farther };
             },
@@ -1357,7 +1423,7 @@ const DynamicColour k_secondaryDim{ {
         },
 } };
 
-const DynamicColour k_onSecondary{ {
+constexpr DynamicColour k_onSecondary{ Role::OnSecondary, {
     .name = "on_secondary",
     .base = {
         .palette = secondaryPalette,
@@ -1372,7 +1438,7 @@ const DynamicColour k_onSecondary{ {
                 return &secondary();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 4.5, 7.0, 11.0, 21.0 };
             },
     },
@@ -1383,7 +1449,7 @@ const DynamicColour k_onSecondary{ {
                 return isPhone(s) ? &secondary() : &secondaryDim();
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve6 : k_curve7;
             },
     },
@@ -1394,13 +1460,13 @@ const DynamicColour k_onSecondary{ {
                 return &secondary();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve6;
             },
     },
 } };
 
-const DynamicColour k_secondaryContainer{ {
+constexpr DynamicColour k_secondaryContainer{ Role::SecondaryContainer, {
     .name = "secondary_container",
     .isBackground = true,
     .base = {
@@ -1420,11 +1486,11 @@ const DynamicColour k_secondaryContainer{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ secondaryContainer(), secondary(), 10.0, TonePolarity::Nearer, false };
             },
     },
@@ -1468,7 +1534,7 @@ const DynamicColour k_secondaryContainer{ {
     },
 } };
 
-const DynamicColour k_onSecondaryContainer{ {
+constexpr DynamicColour k_onSecondaryContainer{ Role::OnSecondaryContainer, {
     .name = "on_secondary_container",
     .base = {
         .palette = secondaryPalette,
@@ -1485,7 +1551,7 @@ const DynamicColour k_onSecondaryContainer{ {
                 return &secondaryContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 11.0 };
             },
     },
@@ -1496,7 +1562,7 @@ const DynamicColour k_onSecondaryContainer{ {
                 return &secondaryContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve6 : k_curve7;
             },
     },
@@ -1507,7 +1573,7 @@ const DynamicColour k_onSecondaryContainer{ {
                 return &secondaryContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve6;
             },
     },
@@ -1517,7 +1583,7 @@ const DynamicColour k_onSecondaryContainer{ {
 // Secondary Fixed [QF]                                       //
 ////////////////////////////////////////////////////////////////
 
-const DynamicColour k_secondaryFixed{ {
+constexpr DynamicColour k_secondaryFixed{ Role::SecondaryFixed, {
     .name = "secondary_fixed",
     .isBackground = true,
     .base = {
@@ -1531,11 +1597,11 @@ const DynamicColour k_secondaryFixed{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ secondaryFixed(), secondaryFixedDim(), 10.0, TonePolarity::Lighter, true };
             },
     },
@@ -1564,7 +1630,7 @@ const DynamicColour k_secondaryFixed{ {
 } };
 
 // NOLINTNEXTLINE(misc-static-initialization-cycle): lambdas run after initialisation
-const DynamicColour k_secondaryFixedDim{ {
+constexpr DynamicColour k_secondaryFixedDim{ Role::SecondaryFixedDim, {
     .name = "secondary_fixed_dim",
     .isBackground = true,
     .base = {
@@ -1578,11 +1644,11 @@ const DynamicColour k_secondaryFixedDim{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ secondaryFixed(), secondaryFixedDim(), 10.0, TonePolarity::Lighter, true };
             },
     },
@@ -1593,7 +1659,7 @@ const DynamicColour k_secondaryFixedDim{ {
                 return secondaryFixed().getTone(s);
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ secondaryFixedDim(), secondaryFixed(), 5.0, TonePolarity::Darker, true,
                     DeltaConstraint::Exact };
             },
@@ -1610,14 +1676,14 @@ const DynamicColour k_secondaryFixedDim{ {
             },
         .contrastCurve = containerCurve2026,
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ secondaryFixedDim(), secondaryFixed(), 5.0, TonePolarity::Darker, true,
                     DeltaConstraint::Exact };
             },
     },
 } };
 
-const DynamicColour k_onSecondaryFixed{ {
+constexpr DynamicColour k_onSecondaryFixed{ Role::OnSecondaryFixed, {
     .name = "on_secondary_fixed",
     .base = {
         .palette = secondaryPalette,
@@ -1634,7 +1700,7 @@ const DynamicColour k_onSecondaryFixed{ {
                 return &secondaryFixed();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 4.5, 7.0, 11.0, 21.0 };
             },
     },
@@ -1645,7 +1711,7 @@ const DynamicColour k_onSecondaryFixed{ {
                 return &secondaryFixedDim();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve7;
             },
     },
@@ -1656,13 +1722,13 @@ const DynamicColour k_onSecondaryFixed{ {
                 return fixedBackground2026(secondaryFixed().getTone(s), secondaryFixed(), secondaryFixedDim());
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve7;
             },
     },
 } };
 
-const DynamicColour k_onSecondaryFixedVariant{ {
+constexpr DynamicColour k_onSecondaryFixedVariant{ Role::OnSecondaryFixedVariant, {
     .name = "on_secondary_fixed_variant",
     .base = {
         .palette = secondaryPalette,
@@ -1679,7 +1745,7 @@ const DynamicColour k_onSecondaryFixedVariant{ {
                 return &secondaryFixed();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 11.0 };
             },
     },
@@ -1690,7 +1756,7 @@ const DynamicColour k_onSecondaryFixedVariant{ {
                 return &secondaryFixedDim();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
     },
@@ -1701,7 +1767,7 @@ const DynamicColour k_onSecondaryFixedVariant{ {
                 return fixedBackground2026(secondaryFixed().getTone(s), secondaryFixed(), secondaryFixedDim());
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
     },
@@ -1711,7 +1777,7 @@ const DynamicColour k_onSecondaryFixedVariant{ {
 // Tertiaries [T]                                             //
 ////////////////////////////////////////////////////////////////
 
-const DynamicColour k_tertiary{ {
+constexpr DynamicColour k_tertiary{ Role::Tertiary, {
     .name = "tertiary",
     .isBackground = true,
     .base = {
@@ -1727,11 +1793,11 @@ const DynamicColour k_tertiary{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 7.0 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ tertiaryContainer(), tertiary(), 10.0, TonePolarity::Nearer, false };
             },
     },
@@ -1750,7 +1816,7 @@ const DynamicColour k_tertiary{ {
             },
         .background = highestSurfaceOrContainerHigh,
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve4p5 : k_curve7;
             },
         .toneDeltaPair = [](const DynamicScheme& s) -> std::optional<ToneDeltaPair> {
@@ -1771,7 +1837,7 @@ const DynamicColour k_tertiary{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
         .toneDeltaPair = [](const DynamicScheme& s) -> std::optional<ToneDeltaPair> {
@@ -1784,7 +1850,7 @@ const DynamicColour k_tertiary{ {
 } };
 
 // NOLINTNEXTLINE(misc-static-initialization-cycle): lambdas run after initialisation
-const DynamicColour k_tertiaryDim{ {
+constexpr DynamicColour k_tertiaryDim{ Role::TertiaryDim, {
     .name = "tertiary_dim",
     .isBackground = true,
     .base = {
@@ -1799,11 +1865,11 @@ const DynamicColour k_tertiaryDim{ {
                 return &surfaceContainerHigh();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ tertiaryDim(), tertiary(), 5.0, TonePolarity::Darker, true,
                     DeltaConstraint::Farther };
             },
@@ -1818,7 +1884,7 @@ const DynamicColour k_tertiaryDim{ {
         },
 } };
 
-const DynamicColour k_onTertiary{ {
+constexpr DynamicColour k_onTertiary{ Role::OnTertiary, {
     .name = "on_tertiary",
     .base = {
         .palette = tertiaryPalette,
@@ -1833,7 +1899,7 @@ const DynamicColour k_onTertiary{ {
                 return &tertiary();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 4.5, 7.0, 11.0, 21.0 };
             },
     },
@@ -1844,7 +1910,7 @@ const DynamicColour k_onTertiary{ {
                 return isPhone(s) ? &tertiary() : &tertiaryDim();
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve6 : k_curve7;
             },
     },
@@ -1855,13 +1921,13 @@ const DynamicColour k_onTertiary{ {
                 return &tertiary();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve6;
             },
     },
 } };
 
-const DynamicColour k_tertiaryContainer{ {
+constexpr DynamicColour k_tertiaryContainer{ Role::TertiaryContainer, {
     .name = "tertiary_container",
     .isBackground = true,
     .base = {
@@ -1879,11 +1945,11 @@ const DynamicColour k_tertiaryContainer{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ tertiaryContainer(), tertiary(), 10.0, TonePolarity::Nearer, false };
             },
     },
@@ -1931,7 +1997,7 @@ const DynamicColour k_tertiaryContainer{ {
     },
 } };
 
-const DynamicColour k_onTertiaryContainer{ {
+constexpr DynamicColour k_onTertiaryContainer{ Role::OnTertiaryContainer, {
     .name = "on_tertiary_container",
     .base = {
         .palette = tertiaryPalette,
@@ -1948,7 +2014,7 @@ const DynamicColour k_onTertiaryContainer{ {
                 return &tertiaryContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 11.0 };
             },
     },
@@ -1959,7 +2025,7 @@ const DynamicColour k_onTertiaryContainer{ {
                 return &tertiaryContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve6 : k_curve7;
             },
     },
@@ -1970,7 +2036,7 @@ const DynamicColour k_onTertiaryContainer{ {
                 return &tertiaryContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve6;
             },
     },
@@ -1980,7 +2046,7 @@ const DynamicColour k_onTertiaryContainer{ {
 // Tertiary Fixed [TF]                                        //
 ////////////////////////////////////////////////////////////////
 
-const DynamicColour k_tertiaryFixed{ {
+constexpr DynamicColour k_tertiaryFixed{ Role::TertiaryFixed, {
     .name = "tertiary_fixed",
     .isBackground = true,
     .base = {
@@ -1994,11 +2060,11 @@ const DynamicColour k_tertiaryFixed{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ tertiaryFixed(), tertiaryFixedDim(), 10.0, TonePolarity::Lighter, true };
             },
     },
@@ -2027,7 +2093,7 @@ const DynamicColour k_tertiaryFixed{ {
 } };
 
 // NOLINTNEXTLINE(misc-static-initialization-cycle): lambdas run after initialisation
-const DynamicColour k_tertiaryFixedDim{ {
+constexpr DynamicColour k_tertiaryFixedDim{ Role::TertiaryFixedDim, {
     .name = "tertiary_fixed_dim",
     .isBackground = true,
     .base = {
@@ -2041,11 +2107,11 @@ const DynamicColour k_tertiaryFixedDim{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ tertiaryFixed(), tertiaryFixedDim(), 10.0, TonePolarity::Lighter, true };
             },
     },
@@ -2056,7 +2122,7 @@ const DynamicColour k_tertiaryFixedDim{ {
                 return tertiaryFixed().getTone(s);
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ tertiaryFixedDim(), tertiaryFixed(), 5.0, TonePolarity::Darker, true,
                     DeltaConstraint::Exact };
             },
@@ -2073,14 +2139,14 @@ const DynamicColour k_tertiaryFixedDim{ {
             },
         .contrastCurve = containerCurve2026,
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ tertiaryFixedDim(), tertiaryFixed(), 5.0, TonePolarity::Darker, true,
                     DeltaConstraint::Exact };
             },
     },
 } };
 
-const DynamicColour k_onTertiaryFixed{ {
+constexpr DynamicColour k_onTertiaryFixed{ Role::OnTertiaryFixed, {
     .name = "on_tertiary_fixed",
     .base = {
         .palette = tertiaryPalette,
@@ -2097,7 +2163,7 @@ const DynamicColour k_onTertiaryFixed{ {
                 return &tertiaryFixed();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 4.5, 7.0, 11.0, 21.0 };
             },
     },
@@ -2108,7 +2174,7 @@ const DynamicColour k_onTertiaryFixed{ {
                 return &tertiaryFixedDim();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve7;
             },
     },
@@ -2119,13 +2185,13 @@ const DynamicColour k_onTertiaryFixed{ {
                 return fixedBackground2026(tertiaryFixed().getTone(s), tertiaryFixed(), tertiaryFixedDim());
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve7;
             },
     },
 } };
 
-const DynamicColour k_onTertiaryFixedVariant{ {
+constexpr DynamicColour k_onTertiaryFixedVariant{ Role::OnTertiaryFixedVariant, {
     .name = "on_tertiary_fixed_variant",
     .base = {
         .palette = tertiaryPalette,
@@ -2142,7 +2208,7 @@ const DynamicColour k_onTertiaryFixedVariant{ {
                 return &tertiaryFixed();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 11.0 };
             },
     },
@@ -2153,7 +2219,7 @@ const DynamicColour k_onTertiaryFixedVariant{ {
                 return &tertiaryFixedDim();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
     },
@@ -2164,7 +2230,7 @@ const DynamicColour k_onTertiaryFixedVariant{ {
                 return fixedBackground2026(tertiaryFixed().getTone(s), tertiaryFixed(), tertiaryFixedDim());
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
     },
@@ -2174,7 +2240,7 @@ const DynamicColour k_onTertiaryFixedVariant{ {
 // Errors [E]                                                 //
 ////////////////////////////////////////////////////////////////
 
-const DynamicColour k_error{ {
+constexpr DynamicColour k_error{ Role::Error, {
     .name = "error",
     .isBackground = true,
     .base = {
@@ -2188,11 +2254,11 @@ const DynamicColour k_error{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 7.0 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ errorContainer(), error(), 10.0, TonePolarity::Nearer, false };
             },
     },
@@ -2207,7 +2273,7 @@ const DynamicColour k_error{ {
             },
         .background = highestSurfaceOrContainerHigh,
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve4p5 : k_curve7;
             },
         .toneDeltaPair = [](const DynamicScheme& s) -> std::optional<ToneDeltaPair> {
@@ -2228,7 +2294,7 @@ const DynamicColour k_error{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
         .toneDeltaPair = [](const DynamicScheme& s) -> std::optional<ToneDeltaPair> {
@@ -2241,7 +2307,7 @@ const DynamicColour k_error{ {
 } };
 
 // NOLINTNEXTLINE(misc-static-initialization-cycle): lambdas run after initialisation
-const DynamicColour k_errorDim{ {
+constexpr DynamicColour k_errorDim{ Role::ErrorDim, {
     .name = "error_dim",
     .isBackground = true,
     .base = {
@@ -2255,11 +2321,11 @@ const DynamicColour k_errorDim{ {
                 return &surfaceContainerHigh();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve4p5;
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ errorDim(), error(), 5.0, TonePolarity::Darker, true, DeltaConstraint::Farther };
             },
     },
@@ -2273,7 +2339,7 @@ const DynamicColour k_errorDim{ {
         },
 } };
 
-const DynamicColour k_onError{ {
+constexpr DynamicColour k_onError{ Role::OnError, {
     .name = "on_error",
     .base = {
         .palette = errorPalette,
@@ -2286,7 +2352,7 @@ const DynamicColour k_onError{ {
                 return &error();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 4.5, 7.0, 11.0, 21.0 };
             },
     },
@@ -2297,7 +2363,7 @@ const DynamicColour k_onError{ {
                 return isPhone(s) ? &error() : &errorDim();
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve6 : k_curve7;
             },
     },
@@ -2308,13 +2374,13 @@ const DynamicColour k_onError{ {
                 return &error();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve6;
             },
     },
 } };
 
-const DynamicColour k_errorContainer{ {
+constexpr DynamicColour k_errorContainer{ Role::ErrorContainer, {
     .name = "error_container",
     .isBackground = true,
     .base = {
@@ -2328,11 +2394,11 @@ const DynamicColour k_errorContainer{ {
                 return &highestSurface(s);
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 1.0, 1.0, 3.0, 4.5 };
             },
         .toneDeltaPair =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ToneDeltaPair> {
                 return ToneDeltaPair{ errorContainer(), error(), 10.0, TonePolarity::Nearer, false };
             },
     },
@@ -2368,7 +2434,7 @@ const DynamicColour k_errorContainer{ {
     },
 } };
 
-const DynamicColour k_onErrorContainer{ {
+constexpr DynamicColour k_onErrorContainer{ Role::OnErrorContainer, {
     .name = "on_error_container",
     .base = {
         .palette = errorPalette,
@@ -2383,7 +2449,7 @@ const DynamicColour k_onErrorContainer{ {
                 return &errorContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return ContrastCurve{ 3.0, 4.5, 7.0, 11.0 };
             },
     },
@@ -2394,7 +2460,7 @@ const DynamicColour k_onErrorContainer{ {
                 return &errorContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme& s) {
+            [](const DynamicScheme& s) -> std::optional<ContrastCurve> {
                 return isPhone(s) ? k_curve4p5 : k_curve7;
             },
     },
@@ -2405,7 +2471,7 @@ const DynamicColour k_onErrorContainer{ {
                 return &errorContainer();
             },
         .contrastCurve =
-            [](const DynamicScheme&) {
+            [](const DynamicScheme&) -> std::optional<ContrastCurve> {
                 return k_curve6;
             },
     },
@@ -2482,56 +2548,56 @@ const DynamicColour& onErrorContainer() { return k_onErrorContainer; }
 ////////////////////////////////////////////////////////////////
 
 std::span<const DynamicColour* const> allColours() {
-    static const std::array k_colours{
-        &background(),
-        &onBackground(),
-        &surface(),
-        &surfaceDim(),
-        &surfaceBright(),
-        &surfaceContainerLowest(),
-        &surfaceContainerLow(),
-        &surfaceContainer(),
-        &surfaceContainerHigh(),
-        &surfaceContainerHighest(),
-        &onSurface(),
-        &onSurfaceVariant(),
-        &outline(),
-        &outlineVariant(),
-        &inverseSurface(),
-        &inverseOnSurface(),
-        &primary(),
-        &primaryDim(),
-        &onPrimary(),
-        &primaryContainer(),
-        &onPrimaryContainer(),
-        &primaryFixed(),
-        &primaryFixedDim(),
-        &onPrimaryFixed(),
-        &onPrimaryFixedVariant(),
-        &inversePrimary(),
-        &secondary(),
-        &secondaryDim(),
-        &onSecondary(),
-        &secondaryContainer(),
-        &onSecondaryContainer(),
-        &secondaryFixed(),
-        &secondaryFixedDim(),
-        &onSecondaryFixed(),
-        &onSecondaryFixedVariant(),
-        &tertiary(),
-        &tertiaryDim(),
-        &onTertiary(),
-        &tertiaryContainer(),
-        &onTertiaryContainer(),
-        &tertiaryFixed(),
-        &tertiaryFixedDim(),
-        &onTertiaryFixed(),
-        &onTertiaryFixedVariant(),
-        &error(),
-        &errorDim(),
-        &onError(),
-        &errorContainer(),
-        &onErrorContainer(),
+    static constexpr std::array k_colours{
+        &k_background,
+        &k_onBackground,
+        &k_surface,
+        &k_surfaceDim,
+        &k_surfaceBright,
+        &k_surfaceContainerLowest,
+        &k_surfaceContainerLow,
+        &k_surfaceContainer,
+        &k_surfaceContainerHigh,
+        &k_surfaceContainerHighest,
+        &k_onSurface,
+        &k_onSurfaceVariant,
+        &k_outline,
+        &k_outlineVariant,
+        &k_inverseSurface,
+        &k_inverseOnSurface,
+        &k_primary,
+        &k_primaryDim,
+        &k_onPrimary,
+        &k_primaryContainer,
+        &k_onPrimaryContainer,
+        &k_primaryFixed,
+        &k_primaryFixedDim,
+        &k_onPrimaryFixed,
+        &k_onPrimaryFixedVariant,
+        &k_inversePrimary,
+        &k_secondary,
+        &k_secondaryDim,
+        &k_onSecondary,
+        &k_secondaryContainer,
+        &k_onSecondaryContainer,
+        &k_secondaryFixed,
+        &k_secondaryFixedDim,
+        &k_onSecondaryFixed,
+        &k_onSecondaryFixedVariant,
+        &k_tertiary,
+        &k_tertiaryDim,
+        &k_onTertiary,
+        &k_tertiaryContainer,
+        &k_onTertiaryContainer,
+        &k_tertiaryFixed,
+        &k_tertiaryFixedDim,
+        &k_onTertiaryFixed,
+        &k_onTertiaryFixedVariant,
+        &k_error,
+        &k_errorDim,
+        &k_onError,
+        &k_errorContainer,
+        &k_onErrorContainer,
     };
     return k_colours;
 }

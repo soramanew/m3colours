@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <stdexcept>
 
 #include "m3colours/contrast.hpp"
 
@@ -24,15 +23,6 @@ double clampDouble(double min, double max, double input) {
 
 bool isExactly(double value, double target) {
     return !(value < target) && !(value > target);
-}
-
-void validate(const std::string& name, const ColourSpec& spec) {
-    if (!spec.background && spec.secondBackground)
-        throw std::invalid_argument("Colour " + name + " has secondBackground defined, but background is not defined.");
-    if (!spec.background && spec.contrastCurve)
-        throw std::invalid_argument("Colour " + name + " has contrastCurve defined, but background is not defined.");
-    if (spec.background && !spec.contrastCurve)
-        throw std::invalid_argument("Colour " + name + " has background defined, but contrastCurve is not defined.");
 }
 
 double awkwardZoneAdjusted(double tone) {
@@ -247,20 +237,6 @@ double ContrastCurve::get(double contrastLevel) const {
     if (contrastLevel < 1.0)
         return lerp(medium, high, (contrastLevel - 0.5) / 0.5);
     return high;
-}
-
-DynamicColour::DynamicColour(DynamicColourOptions options)
-    : m_index(s_nextIndex++)
-    , m_name(std::move(options.name))
-    , m_isBackground(options.isBackground)
-    , m_base(std::move(options.base))
-    , m_spec2025(std::move(options.spec2025))
-    , m_spec2026(std::move(options.spec2026)) {
-    validate(m_name, m_base);
-    if (m_spec2025)
-        validate(m_name, *m_spec2025);
-    if (m_spec2026)
-        validate(m_name, *m_spec2026);
 }
 
 const ColourSpec& DynamicColour::spec(const DynamicScheme& scheme) const {

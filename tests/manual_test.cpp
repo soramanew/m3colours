@@ -188,8 +188,8 @@ void printVariant(m3colours::Hct source, const std::string& variant, bool dark) 
     const auto scheme = schemeForVariant(source, variant, dark);
     for (const auto* colour : m3colours::dynamiccolour::material::allColours()) {
         const auto argb = scheme.getArgb(*colour);
-        std::printf("%-32s %06x " SWATCH_FORMAT "\n", colour->name().c_str(), argb.value() & 0xffffffu, argb.red(),
-            argb.green(), argb.blue());
+        std::printf("%-32s %06x " SWATCH_FORMAT "\n", std::string{ colour->name() }.c_str(), argb.value() & 0xffffffu,
+            argb.red(), argb.green(), argb.blue());
     }
 }
 

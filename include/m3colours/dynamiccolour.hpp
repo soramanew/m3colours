@@ -3,11 +3,12 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "common.hpp"
@@ -73,6 +74,8 @@ struct ContrastCurve {
 class DynamicColour;
 class DynamicScheme;
 
+inline constexpr std::size_t k_toneCacheSize = 64;
+
 struct ToneDeltaPair {
     ToneDeltaPair(const DynamicColour& first, const DynamicColour& second, double toneDelta, TonePolarity tonePolarity,
         bool keepTogether, DeltaConstraint deltaConstraint = DeltaConstraint::Exact)
@@ -92,17 +95,17 @@ struct ToneDeltaPair {
 };
 
 struct ColourSpec {
-    std::function<const palettes::TonalPalette&(const DynamicScheme&)> palette;
-    std::function<double(const DynamicScheme&)> tone;
-    std::function<double(const DynamicScheme&)> chromaMultiplier;
-    std::function<const DynamicColour*(const DynamicScheme&)> background;
-    std::function<const DynamicColour*(const DynamicScheme&)> secondBackground;
-    std::function<std::optional<ContrastCurve>(const DynamicScheme&)> contrastCurve;
-    std::function<std::optional<ToneDeltaPair>(const DynamicScheme&)> toneDeltaPair;
+    const palettes::TonalPalette& (*palette)(const DynamicScheme&) = nullptr;
+    double (*tone)(const DynamicScheme&) = nullptr;
+    double (*chromaMultiplier)(const DynamicScheme&) = nullptr;
+    const DynamicColour* (*background)(const DynamicScheme&) = nullptr;
+    const DynamicColour* (*secondBackground)(const DynamicScheme&) = nullptr;
+    std::optional<ContrastCurve> (*contrastCurve)(const DynamicScheme&) = nullptr;
+    std::optional<ToneDeltaPair> (*toneDeltaPair)(const DynamicScheme&) = nullptr;
 };
 
 struct DynamicColourOptions {
-    std::string name;
+    std::string_view name;
     bool isBackground = false;
     ColourSpec base;
     std::optional<ColourSpec> spec2025;
@@ -111,10 +114,22 @@ struct DynamicColourOptions {
 
 class DynamicColour {
 public:
-    explicit DynamicColour(DynamicColourOptions options);
+    constexpr DynamicColour(std::size_t index, DynamicColourOptions options)
+        : m_index(index)
+        , m_name(options.name)
+        , m_isBackground(options.isBackground)
+        , m_base(options.base)
+        , m_spec2025(options.spec2025)
+        , m_spec2026(options.spec2026) {
+        validate(m_base);
+        if (m_spec2025)
+            validate(*m_spec2025);
+        if (m_spec2026)
+            validate(*m_spec2026);
+    }
 
     // clang-format off
-    [[nodiscard]] const std::string& name() const { return m_name; }
+    [[nodiscard]] std::string_view name() const { return m_name; }
     [[nodiscard]] bool isBackground() const { return m_isBackground; }
     // clang-format on
 
@@ -136,12 +151,22 @@ public:
     static double enableLightForeground(double tone);
 
 private:
+    constexpr void validate(const ColourSpec& spec) const {
+        if (!spec.background && spec.secondBackground)
+            throw std::invalid_argument(std::string{ "Colour " }.append(m_name).append(
+                " has secondBackground defined, but background is not defined."));
+        if (!spec.background && spec.contrastCurve)
+            throw std::invalid_argument(std::string{ "Colour " }.append(m_name).append(
+                " has contrastCurve defined, but background is not defined."));
+        if (spec.background && !spec.contrastCurve)
+            throw std::invalid_argument(std::string{ "Colour " }.append(m_name).append(
+                " has background defined, but contrastCurve is not defined."));
+    }
+
     [[nodiscard]] const ColourSpec& spec(const DynamicScheme& scheme) const;
 
-    inline static std::size_t s_nextIndex = 0;
-
     std::size_t m_index;
-    std::string m_name;
+    std::string_view m_name;
     bool m_isBackground;
     ColourSpec m_base;
     std::optional<ColourSpec> m_spec2025;
@@ -274,7 +299,7 @@ private:
     palettes::TonalPalette m_neutralPalette;
     palettes::TonalPalette m_neutralVariantPalette;
     palettes::TonalPalette m_errorPalette;
-    mutable std::array<double, 64> m_toneCache;
+    mutable std::array<double, k_toneCacheSize> m_toneCache;
     mutable std::shared_ptr<const DynamicScheme> m_lightStandardContrast;
 };
 
