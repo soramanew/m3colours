@@ -223,7 +223,7 @@ std::optional<Box> cut(const Moments& moments, Box& box) {
 } // namespace
 
 std::vector<Argb> wu(std::span<const Argb> pixels, uint16_t maxColours) {
-    return internal::wu(internal::uniquePixels(pixels, false), maxColours);
+    return internal::wu(uniquePixels(pixels, false), maxColours);
 }
 
 std::vector<Argb> internal::wu(const WeightedPixels& pixels, uint16_t maxColours) {

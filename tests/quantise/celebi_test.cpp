@@ -23,6 +23,21 @@ TEST(Celebi, FullImage) {
     celebi(pixels, 128);
 }
 
+TEST(Celebi, WeightedPixelsMatchesSpan) {
+    std::vector<Argb> pixels;
+    pixels.reserve(12544);
+    for (std::uint32_t i = 0; i < 12544; i++)
+        pixels.emplace_back(0xff000000 | (i % 8000));
+
+    const auto unique = uniquePixels(pixels, true);
+    EXPECT_EQ(unique.pixels.size(), 8000u);
+    EXPECT_EQ(celebi(unique, 128).colourToCount, celebi(pixels, 128).colourToCount);
+}
+
+TEST(Celebi, EmptyWeightedPixels) {
+    EXPECT_TRUE(celebi(WeightedPixels{}, 128).colourToCount.empty());
+}
+
 TEST(Celebi, OneRed) {
     auto result = celebi(repeated(0xffff0000, 1), 256);
     EXPECT_EQ(result.colourToCount.size(), 1u);
@@ -78,7 +93,7 @@ TEST(Celebi, SingleTransparent) {
 }
 
 TEST(Celebi, TooManyColours) {
-    auto result = celebi({}, 32767);
+    auto result = celebi(std::vector<Argb>{}, 32767);
     EXPECT_TRUE(result.colourToCount.empty());
     EXPECT_TRUE(result.inputToCluster.empty());
 }

@@ -5,8 +5,6 @@
 
 namespace m3colours::quantise {
 
-namespace internal {
-
 namespace {
 
 constexpr std::size_t k_maxExactPixels = std::size_t{ 1 } << 20;
@@ -96,17 +94,18 @@ WeightedPixels uniquePixels(std::span<const Argb> pixels, bool opaqueOnly) {
     return exactPixels(pixels, opaqueOnly);
 }
 
-} // namespace internal
-
-QuantiserResult celebi(std::span<const Argb> pixels, uint16_t maxColours, bool filterTransparent) {
-    if (maxColours == 0 || pixels.empty())
+QuantiserResult celebi(const WeightedPixels& pixels, uint16_t maxColours) {
+    if (maxColours == 0 || pixels.pixels.empty())
         return {};
 
     maxColours = std::min<uint16_t>(maxColours, 256);
 
-    const auto unique = internal::uniquePixels(pixels, filterTransparent);
-    const auto wuResult = internal::wu(unique, maxColours);
-    return internal::wsMeans(unique, wuResult, maxColours);
+    const auto wuResult = internal::wu(pixels, maxColours);
+    return internal::wsMeans(pixels, wuResult, maxColours);
+}
+
+QuantiserResult celebi(std::span<const Argb> pixels, uint16_t maxColours, bool filterTransparent) {
+    return celebi(uniquePixels(pixels, filterTransparent), maxColours);
 }
 
 } // namespace m3colours::quantise

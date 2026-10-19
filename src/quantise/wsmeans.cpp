@@ -220,7 +220,7 @@ QuantiserResult WsMeans::buildResult() const {
 
 QuantiserResult wsMeans(
     std::span<const Argb> inputPixels, const std::vector<Argb>& startingClusters, uint16_t maxColours) {
-    return internal::wsMeans(internal::uniquePixels(inputPixels, false), startingClusters, maxColours);
+    return internal::wsMeans(uniquePixels(inputPixels, false), startingClusters, maxColours);
 }
 
 QuantiserResult internal::wsMeans(

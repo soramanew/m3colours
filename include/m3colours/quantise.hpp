@@ -40,17 +40,20 @@ struct WeightedPixels {
 
 namespace internal {
 
-WeightedPixels uniquePixels(std::span<const Argb> pixels, bool opaqueOnly);
 std::vector<Argb> wu(const WeightedPixels& pixels, uint16_t maxColours);
 QuantiserResult wsMeans(const WeightedPixels& pixels, const std::vector<Argb>& startingClusters, uint16_t maxColours);
 
 } // namespace internal
+
+// Exact for up to 2^20 pixels, binned to 5 bits per channel above that
+WeightedPixels uniquePixels(std::span<const Argb> pixels, bool opaqueOnly);
 
 std::vector<Argb> wu(std::span<const Argb> pixels, uint16_t maxColours);
 
 QuantiserResult wsMeans(
     std::span<const Argb> inputPixels, const std::vector<Argb>& startingClusters, uint16_t maxColours);
 
+QuantiserResult celebi(const WeightedPixels& pixels, uint16_t maxColours);
 QuantiserResult celebi(std::span<const Argb> pixels, uint16_t maxColours, bool filterTransparent = true);
 
 } // namespace m3colours::quantise
