@@ -33,11 +33,11 @@ constexpr std::array k_allVariants = {
 
 struct PrintFlags {
     static constexpr unsigned k_default = 0;
-    static constexpr unsigned k_all = 1u << 0u;
-    static constexpr unsigned k_quantised = 1u << 1u;
-    static constexpr unsigned k_score = 1u << 2u;
-    static constexpr unsigned k_schemeSingle = 1u << 3u;
-    static constexpr unsigned k_schemeAll = 1u << 4u;
+    static constexpr unsigned k_quantised = 1u << 0u;
+    static constexpr unsigned k_score = 1u << 1u;
+    static constexpr unsigned k_schemeSingle = 1u << 2u;
+    static constexpr unsigned k_schemeAll = 1u << 3u;
+    static constexpr unsigned k_all = k_quantised | k_score | k_schemeSingle | k_schemeAll;
 };
 
 enum class UsageCause : std::uint8_t {
