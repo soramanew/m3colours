@@ -14,11 +14,11 @@ hct::internal::Jch jchFromArgb(Argb argb) {
 
 } // namespace
 
-Argb harmonise(Argb designColour, Argb sourceColour) {
+Argb harmonise(Argb designColour, Argb sourceColour, double maxRotation) {
     const auto fromXyz = hct::internal::xyzFromArgb(designColour);
     const auto from = hct::internal::jchFromXyz(fromXyz, hct::k_defaultViewingConditions);
     const auto toHue = jchFromArgb(sourceColour).hue;
-    const auto rotationDegrees = std::min(differenceDegrees(from.hue, toHue) * 0.5, 15.0);
+    const auto rotationDegrees = std::min(differenceDegrees(from.hue, toHue) * 0.5, maxRotation);
     const auto outputHue = sanitiseDegrees(from.hue + rotationDegrees * rotationDirection(from.hue, toHue));
     return hct::solveToArgb(outputHue, from.chroma, lstarFromY(fromXyz.b));
 }
